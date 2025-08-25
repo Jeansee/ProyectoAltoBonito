@@ -1,4 +1,4 @@
-Integrantes del equipo
-Katherine Pereira
-Leonardo Hernandez
+Integrantes del equipo:
+Katherine Pereira,
+Leonardo Hernandez,
 Jeanfranco Sanchez
