@@ -1,15 +1,178 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+/**
+ * ================= Enums =================
+ */
+
+enum TipoRecurso {
+  QUINCHO
+  PISCINA
+  CANCHA
+}
+
+enum ModalidadReserva {
+  POR_HORA
+  DIA_COMPLETO
+  BLOQUE
+}
+
+enum EstadoReserva {
+  PENDIENTE
+  CONFIRMADA
+  PAGADA
+  CANCELADA
+}
+
+enum EstadoPago {
+  INITIATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+}
+
+enum MedioNotificacion {
+  WHATSAPP
+  EMAIL
+}
+
+/**
+ * ================= Modelos =================
+ */
+
+model Usuario {
+  id                 String    @id @default(cuid())
+  nombre             String?
+  correo             String    @unique
+  telefono           String?
+  password           String    @db.VarChar(300)  // <-- contraseña encriptada
+  rol                String    @default("CLIENTE") // CLIENTE | ADMIN
+  reservas           Reserva[]
+  fechaCreacion      DateTime  @default(now())
+  fechaActualizacion DateTime  @updatedAt
+}
+
+model Recurso {
+  id                 String           @id @default(cuid())
+  nombre             String
+  tipo               TipoRecurso
+  activo             Boolean          @default(true)
+  capacidad          Int?
+  horarios           Horario[] 
+  turnos             Turno[] 
+  tarifas            Tarifa[] 
+  bloqueos           Bloqueo[] 
+  reservas           ReservaRecurso[]
+  fechaCreacion      DateTime         @default(now())
+  fechaActualizacion DateTime         @updatedAt
+}
+
+model Horario {
+  id        String  @id @default(cuid())
+  recursoId String
+  recurso   Recurso @relation(fields: [recursoId], references: [id], onDelete: Cascade)
+  diaSemana Int 
+  abre      String 
+  cierra    String 
+
+  @@unique([recursoId, diaSemana]) 
+}
+
+model Turno {
+  id              String  @id @default(cuid())
+  recursoId       String
+  recurso         Recurso @relation(fields: [recursoId], references: [id], onDelete: Cascade)
+  nombre          String 
+  inicioHHmm      String 
+  finHHmm         String 
+  cruzaMedianoche Boolean @default(false)
+  diasSemana      Int[] 
+  precioFijoCLP   Int?
+  activo          Boolean @default(true)
+
+  @@index([recursoId])
+}
+
+model Tarifa {
+  id         String    @id @default(cuid())
+  recursoId  String
+  recurso    Recurso   @relation(fields: [recursoId], references: [id], onDelete: Cascade)
+  precioHora Int
+  precioDia  Int
+  vigente    Boolean   @default(true)
+  desde      DateTime  @default(now())
+  hasta      DateTime?
+
+  @@index([recursoId, vigente])
+}
+
+model Bloqueo {
+  id        String   @id @default(cuid())
+  recursoId String
+  recurso   Recurso  @relation(fields: [recursoId], references: [id], onDelete: Cascade)
+  motivo    String?
+  inicio    DateTime
+  fin       DateTime
+
+  @@index([recursoId, inicio, fin])
+}
+
+model Reserva {
+  id             String           @id @default(cuid())
+  usuarioId      String
+  usuario        Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  modalidad      ModalidadReserva
+  estado         EstadoReserva    @default(PENDIENTE)
+  inicio         DateTime 
+  fin            DateTime
+  montoTotalCLP  Int
+  notas          String?
+  recursos       ReservaRecurso[]
+  pago           Pago?
+  notificaciones Notificacion[]
+  fechaCreacion  DateTime         @default(now())
+
+  @@index([inicio, fin])
+}
+
+model ReservaRecurso {
+  id        String  @id @default(cuid())
+  reservaId String
+  recursoId String
+  reserva   Reserva @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  recurso   Recurso @relation(fields: [recursoId], references: [id], onDelete: Restrict)
+
+  @@unique([reservaId, recursoId])
+  @@index([recursoId])
+}
+
+model Pago {
+  id        String     @id @default(cuid())
+  reservaId String     @unique
+  reserva   Reserva    @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  estado    EstadoPago
+  montoCLP  Int
+  txToken   String?
+  createdAt DateTime   @default(now())
+}
+
+model Notificacion {
+  id         String            @id @default(cuid())
+  reservaId  String
+  reserva    Reserva           @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  medio      MedioNotificacion
+  mensaje    String
+  estado     String            @default("ENVIADA") // ENVIADA | FALLIDA | PENDIENTE
+  fechaEnvio DateTime          @default(now())
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "../ERD.svg"
 }

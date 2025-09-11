@@ -1,0 +1,222 @@
+.container {
+  width: 100%;
+  overflow-x: hidden;
+  background-color: #FAFAFA;
+}
+
+.hero {
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)),
+              url('/images/quincho-hero.jpg');
+  background-size: cover;
+  background-position: center;
+  color: white;
+  overflow: hidden;
+}
+
+.heroOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.3),
+    rgba(0, 0, 0, 0.5)
+  );
+  z-index: 1;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: min(90%, 1200px);
+  padding: clamp(1rem, 5vw, 3rem);
+}
+
+.hero h1 {
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-weight: 800;
+  margin-bottom: clamp(1rem, 3vw, 1.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-shadow: 2px 2px 20px rgba(0,0,0,0.3);
+}
+
+.hero p {
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  margin-bottom: clamp(1.5rem, 4vw, 2rem);
+  max-width: 600px;
+  margin-inline: auto;
+  line-height: 1.6;
+}
+
+.heroButton {
+  display: inline-block;
+  padding: clamp(0.8rem, 2vw, 1rem) clamp(1.5rem, 4vw, 2rem);
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  background: white;
+  color: #2563EB;
+  text-decoration: none;
+  border-radius: 9999px;
+  font-weight: 600;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.heroButton:focus {
+  outline: 2px solid white;
+  outline-offset: 4px;
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: clamp(1.5rem, 5vw, 3rem);
+  padding: clamp(3rem, 8vw, 8rem) clamp(1rem, 5vw, 2rem);
+  max-width: 1400px;
+  margin: 0 auto;
+  scroll-margin-top: 2rem;
+}
+
+.featureCard {
+  background: white;
+  padding: clamp(2rem, 5vw, 3rem);
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+  text-align: center;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(0.8rem, 2vw, 1rem);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.featureCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.1);
+}
+
+.featureCard:focus {
+  outline: 2px solid #2563EB;
+  outline-offset: 4px;
+}
+
+.featureCard i {
+  font-size: clamp(2rem, 5vw, 3rem);
+  color: #2563EB;
+  margin-bottom: clamp(0.5rem, 2vw, 1rem);
+}
+
+.featureCard h3 {
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  color: #1F2937;
+  font-weight: 700;
+}
+
+.featureCard p {
+  color: #6B7280;
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  line-height: 1.6;
+}
+
+.gallery {
+  padding: clamp(3rem, 8vw, 8rem) clamp(1rem, 5vw, 2rem);
+  background: white;
+}
+
+.gallery h2 {
+  text-align: center;
+  font-size: clamp(2rem, 5vw, 3rem);
+  margin-bottom: clamp(2rem, 5vw, 4rem);
+  color: #1F2937;
+  font-weight: 800;
+}
+
+.gridGallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: clamp(1rem, 3vw, 2rem);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.galleryItem {
+  aspect-ratio: 1;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.galleryItem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.galleryItem:hover img {
+  transform: scale(1.1);
+}
+
+/* Mejoras de accesibilidad y responsive */
+@media (prefers-reduced-motion: reduce) {
+  .heroButton,
+  .featureCard,
+  .galleryItem img {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .heroContent {
+    padding: 1rem;
+  }
+  
+  .features {
+    padding: 3rem 1rem;
+  }
+  
+  .gallery {
+    padding: 3rem 1rem;
+  }
+  
+  .gridGallery {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  }
+}
+
+/* Mejoras de contraste y legibilidad */
+@media (prefers-color-scheme: dark) {
+  .container {
+    background-color: #111827;
+  }
+  
+  .featureCard {
+    background: #1F2937;
+  }
+  
+  .featureCard h3 {
+    color: #F3F4F6;
+  }
+  
+  .featureCard p {
+    color: #D1D5DB;
+  }
+  
+  .gallery {
+    background: #111827;
+  }
+  
+  .gallery h2 {
+    color: #F3F4F6;
+  }
+}

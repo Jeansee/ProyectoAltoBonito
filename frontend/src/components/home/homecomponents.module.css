@@ -1,0 +1,97 @@
+.hero {
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  overflow: hidden;
+}
+
+.heroOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.3),
+    rgba(0, 0, 0, 0.5)
+  );
+  z-index: 1;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: min(90%, 1200px);
+  padding: 2rem;
+}
+
+.hero h1 {
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.hero p {
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  margin-bottom: 2rem;
+  max-width: 600px;
+  margin-inline: auto;
+}
+
+.heroButton {
+  padding: 1rem 2rem;
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  background: white;
+  color: #2563EB;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.featureCard {
+  background: white;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+  text-align: center;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.featureCard i {
+  font-size: clamp(2rem, 5vw, 3rem);
+  color: #2563EB;
+}
+
+.featureCard h3 {
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  color: #1F2937;
+}
+
+.featureCard p {
+  color: #6B7280;
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .heroContent {
+    padding: 1rem;
+  }
+  
+  .featureCard {
+    padding: 1.5rem;
+  }
+}
