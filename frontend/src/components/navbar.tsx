@@ -1,115 +1,136 @@
-// src/components/Navbar.tsx
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { isLoggedIn, logout } from "../lib/auth";
+import React, { useEffect, useState } from "react";
 
-const sections = [
-  { id: "inicio", label: "Inicio" },
-  { id: "sobre", label: "Sobre nosotros" },
-  { id: "servicios", label: "Servicios" },
-  { id: "contacto", label: "Contacto" },
+const links = [
+  { href: "#inicio", label: "Inicio" },
+  { href: "#nosotros", label: "Sobre nosotros" },
+  { href: "#contacto", label: "Contacto" },
 ];
 
-export default function Navbar() {
+function Logo() {
+  return (
+    <div className="flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="h-6 w-6" aria-hidden>
+        <defs>
+          <linearGradient id="g" x1="0" x2="1">
+            <stop offset="0%" stopColor="#6366f1" />
+            <stop offset="100%" stopColor="#8b5cf6" />
+          </linearGradient>
+        </defs>
+        <path fill="url(#g)" d="M24.53 13.53c-3.51-3.5-8.62-4.73-13.23-3.13a9.96 9.96 0 0 0-6.58 7.26c-.8 3.67 1.17 6.9 4.2 7.31 3.28.45 6.33-1.8 9.69-3.94 3.03-1.92 6.4-3.64 9.57-3.14 2.38.38 4.02 1.8 4.9 3.36-1.08-2.82-2.98-5.19-5.55-7.72zM23.47 34.47c3.51 3.5 8.62 4.73 13.23 3.13a9.96 9.96 0 0 0 6.58-7.26c.8-3.67-1.17-6.9-4.2-7.31-3.28-.45-6.33 1.8-9.69 3.94-3.03 1.92-6.4 3.64-9.57 3.14-2.38-.38-4.02-1.8-4.9-3.36 1.08 2.82 2.98 5.19 5.55 7.72z"/>
+      </svg>
+    </div>
+  );
+}
+
+export default function Header() {
   const [open, setOpen] = useState(false);
-  const [authed, setAuthed] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
 
-  useEffect(() => setAuthed(isLoggedIn()), []);
-
-  function goTo(id: string) {
-    const doScroll = () => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-
-    if (location.pathname !== "/") {
-      navigate("/", { replace: false });
-      // pequeño delay para que la landing se monte
-      setTimeout(doScroll, 60);
-    } else {
-      doScroll();
-    }
-    setOpen(false);
-  }
-
-  function handleLogout() {
-    logout();
-    setAuthed(false);
-    navigate("/");
-  }
+  // Bloquear scroll del body cuando el panel está abierto
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 bg-white/80 backdrop-blur border-b">
-      <nav className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <button onClick={() => goTo("inicio")} className="font-bold text-xl tracking-tight">
-          Quincho <span className="text-indigo-600">Altobonito</span>
-        </button>
+    <>
+      {/* HEADER */}
+      <header className="sticky top-0 z-30 bg-white border-b">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            {/* Logo */}
+            <a href="/" className="flex items-center gap-2" aria-label="Home">
+              <Logo />
+            </a>
 
-        {/* desktop */}
-        <div className="hidden md:flex items-center gap-6">
-          {sections.map(s => (
+            {/* Nav centrado (desktop) */}
+            <nav className="hidden md:flex flex-1 justify-center">
+              <ul className="flex items-center gap-10 text-[15px] font-medium text-gray-800">
+                {links.map((l) => (
+                  <li key={l.href}>
+                    <a href={l.href} className="hover:text-indigo-600 transition-colors">
+                      {l.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+            {/* Acciones (desktop) */}
+            <div className="hidden md:flex items-center gap-4">
+              <a href="#login" className="text-sm font-medium text-gray-700 hover:text-indigo-600">
+                Inciar sesión
+              </a>
+              <a
+                href="#signup"
+                className="rounded-md px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
+              >
+                Registrarse
+              </a>
+            </div>
+
+            {/* Hamburguesa (mobile) */}
             <button
-              key={s.id}
-              onClick={() => goTo(s.id)}
-              className="text-sm text-gray-600 hover:text-gray-900"
+              onClick={() => setOpen(true)}
+              aria-label="Open menu"
+              aria-expanded={open}
+              className="md:hidden inline-flex items-center justify-center p-2 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              {s.label}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-6 w-6">
+                <path fill="currentColor" d="M3 6.75A.75.75 0 0 1 3.75 6h16.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 6.75Zm0 5.25c0-.414.336-.75.75-.75h16.5a.75.75 0 0 1 0 1.5H3.75a.75.75 0 0 1-.75-.75Zm.75 4.5a.75.75 0 0 0 0 1.5h16.5a.75.75 0 0 0 0-1.5H3.75Z"/>
+              </svg>
             </button>
-          ))}
-          {authed ? (
-            <button onClick={handleLogout} className="rounded-lg bg-gray-900 text-white px-3 py-2 text-sm hover:bg-black">
-              Salir
-            </button>
-          ) : (
-            <Link to="/login" className="rounded-lg bg-indigo-600 text-white px-3 py-2 text-sm hover:bg-indigo-700">
-              Iniciar sesión
-            </Link>
-          )}
-        </div>
-
-        {/* mobile toggle */}
-        <button
-          className="md:hidden inline-flex items-center rounded-md p-2 text-gray-700 hover:bg-gray-100"
-          onClick={() => setOpen(v => !v)}
-          aria-label="Abrir menú"
-        >
-          <svg width="24" height="24" fill="none" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d={open ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-          </svg>
-        </button>
-      </nav>
-
-      {/* mobile panel */}
-      {open && (
-        <div className="md:hidden border-t bg-white">
-          <div className="mx-auto max-w-6xl px-4 py-3 flex flex-col gap-2">
-            {sections.map(s => (
-              <button
-                key={s.id}
-                onClick={() => goTo(s.id)}
-                className="py-2 text-gray-700 hover:text-gray-900 text-left"
-              >
-                {s.label}
-              </button>
-            ))}
-            {authed ? (
-              <button
-                onClick={() => { setOpen(false); handleLogout(); }}
-                className="mt-2 rounded-lg bg-gray-900 text-white px-3 py-2 text-sm"
-              >
-                Salir
-              </button>
-            ) : (
-              <Link
-                to="/login" onClick={() => setOpen(false)}
-                className="mt-2 rounded-lg bg-indigo-600 text-white px-3 py-2 text-sm text-center"
-              >
-                Iniciar sesión
-              </Link>
-            )}
           </div>
         </div>
-      )}
-    </header>
+      </header>
+
+      {/* PANEL MÓVIL (fuera del header) */}
+      <div className={`md:hidden ${open ? "fixed" : "hidden"} inset-0 z-[100]`}>
+        {/* Backdrop más oscuro para que no se vea nada detrás */}
+        <div onClick={() => setOpen(false)} className="absolute inset-0 bg-black/70" aria-hidden />
+        {/* Drawer */}
+        <aside
+          role="dialog"
+          aria-modal="true"
+          className="absolute top-0 right-0 h-full w-[88%] max-w-sm bg-white shadow-2xl p-6"
+        >
+          <div className="flex items-center justify-between">
+            <Logo />
+            <button
+              onClick={() => setOpen(false)}
+              className="p-2 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              aria-label="Close menu"
+            >
+              ✕
+            </button>
+          </div>
+
+          <nav className="mt-8 space-y-2">
+            {links.map((l) => (
+              <a
+                key={l.href}
+                href={l.href}
+                className="block rounded-lg px-3 py-2 text-base font-medium text-gray-800 hover:bg-gray-100"
+                onClick={() => setOpen(false)}
+              >
+                {l.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="mt-6 border-t pt-6 flex items-center gap-3">
+            <a href="#login" className="text-sm font-medium text-gray-700 hover:text-indigo-600" onClick={() => setOpen(false)}>
+              Inciar sesión
+            </a>
+            <a
+              href="#signup"
+              className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
+              onClick={() => setOpen(false)}
+            >
+              Registrarse
+            </a>
+          </div>
+        </aside>
+      </div>
+    </>
   );
 }
