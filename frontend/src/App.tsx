@@ -3,24 +3,24 @@ import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/navbar";
 import Home from "./pages/home";
 import Login from "./pages/login";
+import Footer from "./components/footer";
 
 export default function App() {
   return (
     <>
+      {/* Navbar fijo en todas las páginas */}
       <Navbar />
-      <main className="pt-16">
+
+      {/* Contenido principal */}
+      <main>
         <Routes>
-          <Route path="/" element={<Home/>} />
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
         </Routes>
       </main>
 
-      <footer className="border-t bg-white">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 text-sm text-gray-600 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p>© {new Date().getFullYear()} Quincho Altobonito. Proyecto académico.</p>
-          <a href="#inicio" className="hover:text-gray-900">Volver arriba ↑</a>
-        </div>
-      </footer>
+      {/* Footer global */}
+      <Footer /> {/* ✅ usamos el nuevo footer */}
     </>
   );
 }
