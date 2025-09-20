@@ -1,3 +1,7 @@
+// Schema para sistema de reservas Quincho Alto Bonito
+// Plataforma de reservas online para quincho, piscina y cancha
+// con múltiples modalidades y sistema de pagos integrado
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,172 +11,207 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/**
- * ================= Enums =================
- */
-
+// ================ Enumeraciones ================
 enum TipoRecurso {
-  QUINCHO
-  PISCINA
-  CANCHA
+  QUINCHO       // Espacio principal para eventos
+  PISCINA       // Área de piscina
+  CANCHA        // Instalaciones deportivas
 }
 
 enum ModalidadReserva {
-  POR_HORA
-  DIA_COMPLETO
-  BLOQUE
+  POR_HORA      // Reserva dentro del horario de apertura
+  DIA_COMPLETO  // Reserva de 00:00 a 23:59
+  BLOQUE        // Turno predefinido (ej: noche 19:00-04:00)
 }
 
 enum EstadoReserva {
-  PENDIENTE
-  CONFIRMADA
-  PAGADA
-  CANCELADA
+  PENDIENTE     // Reserva creada, pendiente de pago
+  CONFIRMADA    // Pago inicial realizado
+  PAGADA        // Pago completo realizado
+  CANCELADA     // Reserva cancelada (manual o automática)
 }
 
 enum EstadoPago {
-  INITIATED
-  AUTHORIZED
-  CAPTURED
-  FAILED
+  INITIATED     // Transacción Webpay iniciada
+  AUTHORIZED    // Pago autorizado por el banco
+  CAPTURED      // Pago capturado exitosamente
+  FAILED        // Transacción fallida
 }
 
-enum MedioNotificacion {
-  WHATSAPP
-  EMAIL
+enum MetodoPago {
+  WEBPAY        // Pago online vía Webpay (preferido)
+  TRANSFERENCIA // Transferencia bancaria (alternativo)
+  EFECTIVO      // Pago en efectivo (casos especiales)
 }
 
-/**
- * ================= Modelos =================
- */
+enum RolUsuario {
+  CLIENTE       // Puede crear y gestionar reservas
+  ADMIN         // Acceso total al sistema
+}
+
+/* ================ Modelos ================ */
+// ================ Modelos Principales ================
 
 model Usuario {
-  id                 String    @id @default(cuid())
-  nombre             String?
-  correo             String    @unique
-  telefono           String?
-  password           String    @db.VarChar(300)  // <-- contraseña encriptada
-  rol                String    @default("CLIENTE") // CLIENTE | ADMIN
-  reservas           Reserva[]
-  fechaCreacion      DateTime  @default(now())
-  fechaActualizacion DateTime  @updatedAt
+  id            String       @id @default(uuid()) @db.Uuid
+  nombre        String       @db.VarChar(100)
+  correo        String       @unique @db.VarChar(254)
+  telefono      String       @db.VarChar(15)      // Formato: +56912345678
+  password      String       @db.VarChar(72)      // Bcrypt hash
+  rol           RolUsuario   @default(CLIENTE)
+  activo        Boolean      @default(true)
+  ultimoAcceso  DateTime?    @db.Timestamp()      // Zona horaria: UTC
+  whatsapp      String?      @db.VarChar(15)      // Para confirmaciones
+  createdAt     DateTime     @default(now()) @db.Timestamp()
+  updatedAt     DateTime     @updatedAt @db.Timestamp()
+  reservas      Reserva[]
+
+  @@index([correo], name: "usuario_correo_idx")
+  @@index([activo], name: "usuario_activo_idx")
+  @@index([telefono], name: "usuario_telefono_idx")
 }
 
 model Recurso {
-  id                 String           @id @default(cuid())
-  nombre             String
-  tipo               TipoRecurso
-  activo             Boolean          @default(true)
-  capacidad          Int?
-  horarios           Horario[] 
-  turnos             Turno[] 
-  tarifas            Tarifa[] 
-  bloqueos           Bloqueo[] 
-  reservas           ReservaRecurso[]
-  fechaCreacion      DateTime         @default(now())
-  fechaActualizacion DateTime         @updatedAt
+  id               String          @id @default(uuid()) @db.Uuid
+  nombre           String          @db.VarChar(100)    // Ej: "Quincho Principal"
+  tipo             TipoRecurso                         // QUINCHO, PISCINA, CANCHA
+  descripcion      String?         @db.Text
+  activo           Boolean         @default(true)
+  capacidad        Int             @db.SmallInt        // Máximo de personas
+  ubicacion        String?         @db.VarChar(150)    // Dirección o referencia
+  precioHoraCLP    Int            @db.Integer         // Precio por hora en CLP
+  precioDiaCLP     Int            @db.Integer         // Precio día completo
+  precioBaseCLP    Int            @db.Integer         // Precio mínimo/base
+  tiempoMinimo     Int            @default(60) @db.SmallInt    // Minutos mínimos
+  tiempoMaximo     Int            @default(480) @db.SmallInt   // Minutos máximos
+  diasAnticipacion Int            @default(30) @db.SmallInt    // Días máximos para reservar
+  createdAt        DateTime       @default(now()) @db.Timestamp()
+  updatedAt        DateTime       @updatedAt @db.Timestamp()
+  
+  // Relaciones
+  horarios         Horario[]       // Horarios de apertura por día
+  turnos           Turno[]         // Bloques predefinidos (ej: turno noche)
+  bloqueos         Bloqueo[]       // Períodos no disponibles
+  reservas         ReservaRecurso[] // Relación con reservas
+
+  @@unique([tipo, nombre], name: "recurso_tipo_nombre_unique")
+  @@index([tipo, activo], name: "recurso_busqueda_idx")
 }
 
-model Horario {
-  id        String  @id @default(cuid())
-  recursoId String
-  recurso   Recurso @relation(fields: [recursoId], references: [id], onDelete: Cascade)
-  diaSemana Int 
-  abre      String 
-  cierra    String 
+// ================ Modelos de Configuración y Disponibilidad ================
 
-  @@unique([recursoId, diaSemana]) 
+model Horario {
+  id         String   @id @default(uuid()) @db.Uuid
+  recursoId  String   @db.Uuid
+  recurso    Recurso  @relation(fields: [recursoId], references: [id], onDelete: Cascade)
+  diaSemana  Int      @db.SmallInt        // 0=Domingo, 1=Lunes, ..., 6=Sábado
+  abreMin    Int      @db.SmallInt        // Minutos desde 00:00 (ej: 480 = 08:00)
+  cierraMin  Int      @db.SmallInt        // Minutos desde 00:00 (ej: 1320 = 22:00)
+  activo     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @db.Timestamp()
+  updatedAt  DateTime @updatedAt @db.Timestamp()
+
+  @@unique([recursoId, diaSemana], name: "horario_recurso_dia_unique")
+  @@index([recursoId], name: "horario_recurso_idx")
 }
 
 model Turno {
-  id              String  @id @default(cuid())
-  recursoId       String
-  recurso         Recurso @relation(fields: [recursoId], references: [id], onDelete: Cascade)
-  nombre          String 
-  inicioHHmm      String 
-  finHHmm         String 
-  cruzaMedianoche Boolean @default(false)
-  diasSemana      Int[] 
-  precioFijoCLP   Int?
-  activo          Boolean @default(true)
+  id            String   @id @default(uuid()) @db.Uuid
+  recursoId     String   @db.Uuid
+  recurso       Recurso  @relation(fields: [recursoId], references: [id], onDelete: Cascade)
+  nombre        String   @db.VarChar(80)      // Ej: "Turno Noche"
+  descripcion   String?  @db.Text
+  inicioMin     Int      @db.SmallInt         // Minutos desde 00:00 (ej: 1140 = 19:00)
+  finMin        Int      @db.SmallInt         // Minutos desde 00:00 (ej: 240 = 04:00 del día siguiente)
+  diasSemana    Int[]    @db.SmallInt         // Array de días válidos (0-6)
+  precioFijoCLP Int      @db.Integer          // Precio fijo del turno
+  capacidadMax  Int?     @db.SmallInt         // Límite de personas (opcional)
+  color         String?  @db.VarChar(7)       // Código HEX (#RRGGBB)
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now()) @db.Timestamp()
+  updatedAt     DateTime @updatedAt @db.Timestamp()
 
-  @@index([recursoId])
-}
-
-model Tarifa {
-  id         String    @id @default(cuid())
-  recursoId  String
-  recurso    Recurso   @relation(fields: [recursoId], references: [id], onDelete: Cascade)
-  precioHora Int
-  precioDia  Int
-  vigente    Boolean   @default(true)
-  desde      DateTime  @default(now())
-  hasta      DateTime?
-
-  @@index([recursoId, vigente])
+  @@index([recursoId], name: "turno_recurso_idx")
 }
 
 model Bloqueo {
-  id        String   @id @default(cuid())
-  recursoId String
-  recurso   Recurso  @relation(fields: [recursoId], references: [id], onDelete: Cascade)
-  motivo    String?
-  inicio    DateTime
-  fin       DateTime
+  id         String   @id @default(uuid()) @db.Uuid
+  recursoId  String   @db.Uuid
+  recurso    Recurso  @relation(fields: [recursoId], references: [id], onDelete: Cascade)
+  motivo     String   @db.VarChar(160)      // Razón del bloqueo
+  inicio     DateTime @db.Timestamp()        // Inicio del bloqueo
+  fin        DateTime @db.Timestamp()        // Fin del bloqueo
+  createdBy  String   @db.Uuid              // Usuario admin que creó el bloqueo
+  createdAt  DateTime @default(now()) @db.Timestamp()
+  updatedAt  DateTime @updatedAt @db.Timestamp()
 
-  @@index([recursoId, inicio, fin])
+  @@index([recursoId, inicio, fin], name: "bloqueo_periodo_idx")
 }
 
-model Reserva {
-  id             String           @id @default(cuid())
-  usuarioId      String
-  usuario        Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
-  modalidad      ModalidadReserva
-  estado         EstadoReserva    @default(PENDIENTE)
-  inicio         DateTime 
-  fin            DateTime
-  montoTotalCLP  Int
-  notas          String?
-  recursos       ReservaRecurso[]
-  pago           Pago?
-  notificaciones Notificacion[]
-  fechaCreacion  DateTime         @default(now())
+// ================ Modelos de Negocio ================
 
-  @@index([inicio, fin])
+model Reserva {
+  id            String           @id @default(uuid()) @db.Uuid
+  usuarioId     String          @db.Uuid
+  usuario       Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  modalidad     ModalidadReserva                    // POR_HORA, DIA_COMPLETO, BLOQUE
+  estado        EstadoReserva   @default(PENDIENTE) 
+  inicio        DateTime        @db.Timestamp()      // UTC, validar contra horarios
+  fin           DateTime        @db.Timestamp()      // UTC, validar contra horarios
+  montoTotalCLP Int            @db.Integer          // Monto total a pagar
+  montoAbonoCLP Int            @default(0) @db.Integer // Abono/señal recibido
+  descuentoCLP  Int            @default(0) @db.Integer // Descuento aplicado
+  notas         String?        @db.Text             // Notas internas/admin
+  metadata      Json?                               // Datos extra (flexible)
+  gcalEventId   String?        @db.VarChar(200)    // ID en Google Calendar
+  createdAt     DateTime       @default(now()) @db.Timestamp()
+  updatedAt     DateTime       @updatedAt @db.Timestamp()
+  
+  recursos      ReservaRecurso[] // Recursos incluidos
+  pagos         Pago[]          // Historial de pagos
+
+  @@index([estado], name: "reserva_estado_idx")
+  @@index([inicio, fin], name: "reserva_periodo_idx")
+  @@index([usuarioId], name: "reserva_usuario_idx")
 }
 
 model ReservaRecurso {
-  id        String  @id @default(cuid())
-  reservaId String
-  recursoId String
-  reserva   Reserva @relation(fields: [reservaId], references: [id], onDelete: Cascade)
-  recurso   Recurso @relation(fields: [recursoId], references: [id], onDelete: Restrict)
+  id             String   @id @default(uuid()) @db.Uuid
+  reservaId      String   @db.Uuid
+  recursoId      String   @db.Uuid
+  reserva        Reserva  @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  recurso        Recurso  @relation(fields: [recursoId], references: [id], onDelete: Restrict)
+  precioBaseCLP  Int      @db.Integer          // Precio base calculado
+  precioFinalCLP Int      @db.Integer          // Precio final (con ajustes)
+  descuentoCLP   Int      @default(0) @db.Integer // Descuento específico
+  notas          String?  @db.Text             // Notas específicas
+  createdAt      DateTime @default(now()) @db.Timestamp()
 
-  @@unique([reservaId, recursoId])
-  @@index([recursoId])
+  @@unique([reservaId, recursoId], name: "reserva_recurso_unique")
+  @@index([recursoId], name: "reserva_recurso_idx")
 }
 
 model Pago {
-  id        String     @id @default(cuid())
-  reservaId String     @unique
-  reserva   Reserva    @relation(fields: [reservaId], references: [id], onDelete: Cascade)
-  estado    EstadoPago
-  montoCLP  Int
-  txToken   String?
-  createdAt DateTime   @default(now())
+  id           String     @id @default(uuid()) @db.Uuid
+  reservaId    String     @db.Uuid
+  reserva      Reserva    @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  estado       EstadoPago                      // Estado Webpay
+  montoCLP     Int        @db.Integer         // Monto del pago
+  metodoPago   MetodoPago                     // WEBPAY/TRANSFERENCIA/EFECTIVO
+  buyOrder     String?    @db.VarChar(100)    // Orden de compra Webpay
+  sessionId    String?    @db.VarChar(100)    // ID sesión Webpay
+  token        String?    @db.VarChar(200)    // Token transacción Webpay
+  comprobante  String?    @db.VarChar(255)    // URL/ruta comprobante
+  procesadoPor String?    @db.Uuid            // Admin que procesó el pago
+  createdAt    DateTime   @default(now()) @db.Timestamp()
+  updatedAt    DateTime   @updatedAt @db.Timestamp()
+
+  @@index([estado], name: "pago_estado_idx")
+  @@index([reservaId], name: "pago_reserva_idx")
 }
 
-model Notificacion {
-  id         String            @id @default(cuid())
-  reservaId  String
-  reserva    Reserva           @relation(fields: [reservaId], references: [id], onDelete: Cascade)
-  medio      MedioNotificacion
-  mensaje    String
-  estado     String            @default("ENVIADA") // ENVIADA | FALLIDA | PENDIENTE
-  fechaEnvio DateTime          @default(now())
-}
-
-generator erd {
-  provider = "prisma-erd-generator"
-  output   = "../ERD.svg"
-}
+// ERD generator temporarily disabled for Docker build
+// generator erd {
+//   provider = "prisma-erd-generator"
+//   output   = "../ERD.svg"
+// }
