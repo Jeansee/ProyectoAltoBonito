@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import s from "../pages/home.module.css";
+import s from "./home.module.css";
 
 type Slide = { image: string; title: string; description: string };
 

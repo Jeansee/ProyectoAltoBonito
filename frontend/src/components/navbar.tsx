@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 const links = [
   { href: "#inicio", label: "Inicio" },
@@ -16,7 +18,7 @@ function Logo() {
             <stop offset="100%" stopColor="#8b5cf6" />
           </linearGradient>
         </defs>
-        <path fill="url(#g)" d="M24.53 13.53c-3.51-3.5-8.62-4.73-13.23-3.13a9.96 9.96 0 0 0-6.58 7.26c-.8 3.67 1.17 6.9 4.2 7.31 3.28.45 6.33-1.8 9.69-3.94 3.03-1.92 6.4-3.64 9.57-3.14 2.38.38 4.02 1.8 4.9 3.36-1.08-2.82-2.98-5.19-5.55-7.72zM23.47 34.47c3.51 3.5 8.62 4.73 13.23 3.13a9.96 9.96 0 0 0 6.58-7.26c.8-3.67-1.17-6.9-4.2-7.31-3.28-.45-6.33 1.8-9.69 3.94-3.03 1.92-6.4 3.64-9.57 3.14-2.38-.38-4.02-1.8-4.9-3.36 1.08 2.82 2.98 5.19 5.55 7.72z"/>
+        <path fill="url(#g)" d="M24.53 13.53c-3.51-3.5-8.62-4.73-13.23-3.13a9.96 9.96 0 0 0-6.58 7.26c-.8 3.67 1.17 6.9 4.2 7.31 3.28.45 6.33-1.8 9.69-3.94 3.03-1.92 6.4-3.64 9.57-3.14 2.38.38 4.02 1.8 4.9 3.36-1.08-2.82-2.98-5.19-5.55-7.72zM23.47 34.47c3.51 3.5 8.62 4.73 13.23 3.13a9.96 9.96 0 0 0 6.58-7.26c.8-3.67-1.17-6.9-4.2-7.31-3.28-.45-6.33 1.8-9.69 3.94-3.03-1.92-6.4-3.64-9.57-3.14-2.38-.38-4.02-1.8-4.9-3.36 1.08 2.82 2.98 5.19 5.55 7.72z"/>
       </svg>
     </div>
   );
@@ -24,8 +26,9 @@ function Logo() {
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  // Bloquear scroll del body cuando el panel está abierto
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -33,16 +36,13 @@ export default function Header() {
 
   return (
     <>
-      {/* HEADER */}
       <header className="sticky top-0 z-30 bg-white border-b">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
-            {/* Logo */}
-            <a href="/" className="flex items-center gap-2" aria-label="Home">
+            <Link to="/" className="flex items-center gap-2" aria-label="Home">
               <Logo />
-            </a>
+            </Link>
 
-            {/* Nav centrado (desktop) */}
             <nav className="hidden md:flex flex-1 justify-center">
               <ul className="flex items-center gap-10 text-[15px] font-medium text-gray-800">
                 {links.map((l) => (
@@ -57,15 +57,45 @@ export default function Header() {
 
             {/* Acciones (desktop) */}
             <div className="hidden md:flex items-center gap-4">
-              <a href="#login" className="text-sm font-medium text-gray-700 hover:text-indigo-600">
-                Inciar sesión
-              </a>
-              <a
-                href="#signup"
-                className="rounded-md px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
-              >
-                Registrarse
-              </a>
+              {!user ? (
+                <>
+                  <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-indigo-600">
+                    Iniciar sesión
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="rounded-md px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    Registrarse
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => navigate('/perfil')}
+                    className="group flex items-center gap-2 rounded-full pl-2 pr-3 py-1 hover:bg-gray-100"
+                    title="Ver perfil"
+                  >
+                    {/* Avatar iniciales */}
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white text-sm font-semibold">
+                      {user.nombre?.[0]?.toUpperCase() ?? 'U'}
+                    </span>
+                    <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600">
+                      {user.nombre}
+                    </span>
+                    {/* ícono chevron */}
+                    <svg viewBox="0 0 20 20" className="h-4 w-4 text-gray-500 group-hover:text-indigo-600" fill="currentColor" aria-hidden>
+                      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 0 1 1.08 1.04l-4.25 4.25a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clipRule="evenodd"/>
+                    </svg>
+                  </button>
+                  <button
+                    onClick={logout}
+                    className="rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                  >
+                    Cerrar sesión
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Hamburguesa (mobile) */}
@@ -83,51 +113,42 @@ export default function Header() {
         </div>
       </header>
 
-      {/* PANEL MÓVIL (fuera del header) */}
+      {/* Panel móvil */}
       <div className={`md:hidden ${open ? "fixed" : "hidden"} inset-0 z-[100]`}>
-        {/* Backdrop más oscuro para que no se vea nada detrás */}
         <div onClick={() => setOpen(false)} className="absolute inset-0 bg-black/70" aria-hidden />
-        {/* Drawer */}
-        <aside
-          role="dialog"
-          aria-modal="true"
-          className="absolute top-0 right-0 h-full w-[88%] max-w-sm bg-white shadow-2xl p-6"
-        >
+        <aside role="dialog" aria-modal="true" className="absolute top-0 right-0 h-full w-[88%] max-w-sm bg-white shadow-2xl p-6">
           <div className="flex items-center justify-between">
             <Logo />
-            <button
-              onClick={() => setOpen(false)}
-              className="p-2 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              aria-label="Close menu"
-            >
-              ✕
-            </button>
+            <button onClick={() => setOpen(false)} className="p-2 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Close menu">✕</button>
           </div>
 
           <nav className="mt-8 space-y-2">
             {links.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
-                className="block rounded-lg px-3 py-2 text-base font-medium text-gray-800 hover:bg-gray-100"
-                onClick={() => setOpen(false)}
-              >
+              <a key={l.href} href={l.href} className="block rounded-lg px-3 py-2 text-base font-medium text-gray-800 hover:bg-gray-100" onClick={() => setOpen(false)}>
                 {l.label}
               </a>
             ))}
           </nav>
 
           <div className="mt-6 border-t pt-6 flex items-center gap-3">
-            <a href="#login" className="text-sm font-medium text-gray-700 hover:text-indigo-600" onClick={() => setOpen(false)}>
-              Inciar sesión
-            </a>
-            <a
-              href="#signup"
-              className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
-              onClick={() => setOpen(false)}
-            >
-              Registrarse
-            </a>
+            {!user ? (
+              <>
+                <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-indigo-600" onClick={() => setOpen(false)}>Iniciar sesión</Link>
+                <Link to="/register" className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700" onClick={() => setOpen(false)}>Registrarse</Link>
+              </>
+            ) : (
+              <>
+                <button onClick={() => { setOpen(false); navigate('/perfil'); }} className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-100">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white text-sm font-semibold">
+                    {user.nombre?.[0]?.toUpperCase() ?? 'U'}
+                  </span>
+                  <span className="text-sm font-medium text-gray-700">Mi Perfil</span>
+                </button>
+                <button onClick={() => { setOpen(false); logout(); }} className="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+                  Cerrar sesión
+                </button>
+              </>
+            )}
           </div>
         </aside>
       </div>

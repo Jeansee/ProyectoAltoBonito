@@ -1,8 +1,8 @@
 import React from "react";
-import HeroSlider from "../components/carousel";
-import AboutSection from "../components/nosotros";
-import ServicesSection from "../components/servicios";
-import Galeria from "../components/galeria";
+import HeroSlider from "../components/home/carousel";
+import AboutSection from "../components/home/nosotros";
+import ServicesSection from "../components/home/servicios";
+import Galeria from "../components/home/galeria";
 
 export default function HomePage() {
   return (

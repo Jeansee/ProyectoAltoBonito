@@ -1,20 +1,21 @@
 ﻿version: "3.9"
+
 services:
   db:
     image: postgres:16
     container_name: postgres_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-appuser}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-superseguro}
-      POSTGRES_DB: ${POSTGRES_DB:-quinchodb}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: quinchodb
       TZ: America/Santiago
     ports:
       - "5432:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-appuser}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d quinchodb"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,11 +25,13 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: quincho_api
+    working_dir: /usr/src/app              # 👈 DENTRO del servicio backend
     restart: unless-stopped
+    env_file:
+      - ./backend/.env
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-appuser}:${POSTGRES_PASSWORD:-superseguro}@db:5432/${POSTGRES_DB:-quinchodb}
-      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key}
+      NODE_ENV: development
+      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_change_in_production}
     volumes:
       - ./backend:/usr/src/app
       - /usr/src/app/node_modules
@@ -37,6 +40,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/__ping || curl -sf http://localhost:3000/__ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   frontend:
     build:
@@ -45,11 +53,14 @@ services:
     container_name: quincho_web
     restart: unless-stopped
     environment:
-      - VITE_API_URL=http://localhost:3000
+      VITE_API_URL: http://localhost:3000
+      CHOKIDAR_USEPOLLING: "true"
+    command: sh -lc "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"
     volumes:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
     ports:
       - "5173:5173"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy

@@ -55,6 +55,7 @@ enum RolUsuario {
 model Usuario {
   id            String       @id @default(uuid()) @db.Uuid
   nombre        String       @db.VarChar(100)
+  apellido      String       @default("") @db.VarChar(100) 
   correo        String       @unique @db.VarChar(254)
   telefono      String       @db.VarChar(15)      // Formato: +56912345678
   password      String       @db.VarChar(72)      // Bcrypt hash
@@ -210,7 +211,6 @@ model Pago {
   @@index([reservaId], name: "pago_reserva_idx")
 }
 
-// ERD generator temporarily disabled for Docker build
 // generator erd {
 //   provider = "prisma-erd-generator"
 //   output   = "../ERD.svg"

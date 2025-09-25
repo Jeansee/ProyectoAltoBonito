@@ -1,19 +1,19 @@
-# Etapa de desarrollo
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /usr/src/app
 
-# Archivos de configuración
+# Necesario si bcrypt no trae binario precompilado en Alpine
+RUN apk add --no-cache python3 make g++ curl
+
+# Instala deps (incluye devDependencies para Nest CLI)
 COPY package*.json ./
+ENV NODE_ENV=development
+RUN npm ci
 
-# Instalación de dependencias
-RUN npm install
-
-# Copiar el código fuente
+# Copia código
 COPY . .
 
-# Exponer el puerto
-EXPOSE 5173
+EXPOSE 3000
 
-# Comando para desarrollo
-CMD ["npm", "run", "dev", "--", "--host"]
+# Deja que Compose use este CMD
+CMD ["npm", "run", "start:dev"]

@@ -83,5 +83,17 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+
+  "prisma": { "schema": "prisma/schema.prisma" },
+
+  "scripts": {
+    "dev": "nest start --watch",
+    "start:dev": "nest start --watch",
+    "start": "nest start",
+    "db:gen": "prisma generate",
+    "db:push": "prisma db push --skip-generate"
   }
+
+
 }
