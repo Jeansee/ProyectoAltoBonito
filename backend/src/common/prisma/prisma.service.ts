@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
-export class PrismaService implements OnModuleInit, OnModuleDestroy {
+export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   // ❗️Sin anotar : PrismaClient
   public readonly prisma = new PrismaClient({ log: ['error', 'warn'] }).$extends({
     query: {

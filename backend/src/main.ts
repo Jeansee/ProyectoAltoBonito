@@ -14,7 +14,11 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
 
-  // 👇 importantísimo para Docker
+  // ✅ Healthchecks sin importar prefijo
+  const http = app.getHttpAdapter();
+  http.get('/__ping', (_req, res) => res.json({ ok: true }));
+  http.get('/api/__ping', (_req, res) => res.json({ ok: true }));
+
   await app.listen(3000, '0.0.0.0');
 }
 bootstrap();
