@@ -1,19 +1,20 @@
-// src/components/Galeria.tsx
 import React, { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { FaChevronLeft, FaChevronRight, FaTimes } from "react-icons/fa";
 
 type GItem = { src: string; title: string };
 
 const IMAGES: GItem[] = [
-  { src: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800", title: "Quincho" },
-  { src: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800", title: "Piscina" },
-  { src: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800", title: "Cancha" },
-  { src: "https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=800", title: "Eventos" },
-  { src: "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800", title: "Parrilla" },
-  { src: "https://images.unsplash.com/photo-1483721310020-03333e577078?w=800", title: "Naturaleza" },
-  { src: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800", title: "Panorámica" },
-  { src: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800", title: "Celebraciones" },
-  // ➕ Nueva imagen añadida
-  { src: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=800", title: "Vista aérea" },
+  { src: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800", title: "" },
+  { src: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800", title: "" },
+  { src: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800", title: "" },
+  { src: "https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=800", title: "" },
+  { src: "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800", title: "" },
+  { src: "https://images.unsplash.com/photo-1483721310020-03333e577078?w=800", title: "" },
+  { src: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800", title: "" },
+  { src: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800", title: "" },
+  { src: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=800", title: "" },
+  { src: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800", title: "" },
 ];
 
 export default function Galeria() {
@@ -28,7 +29,6 @@ export default function Galeria() {
   const next = () => setIndex((i) => (i + 1) % total);
   const prev = () => setIndex((i) => (i - 1 + total) % total);
 
-  // Teclado + bloqueo scroll
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -45,45 +45,54 @@ export default function Galeria() {
   }, [open]);
 
   return (
-    <section id="galeria" className="bg-[#efefef] py-14 sm:py-16">
-      <div className="mx-auto w-full max-w-[1100px] px-4 sm:px-6">
-        <div className="grid items-start gap-10 md:grid-cols-3">
-          {/* Texto a la izquierda */}
-          <div className="md:col-span-1">
-            <p className="text-xs text-gray-500 mb-2">Nuestra</p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">
+    <section id="galeria" className="py-14 bg-[#e5d0ac]">
+      <div className="max-w-[1200px] mx-auto px-4">
+        {/* Título con línea vertical (con efecto on-scroll) */}
+        <motion.div
+          className="flex items-center gap-3 mb-8"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          viewport={{ once: true, amount: 0.25 }}
+        >
+          <span className="block w-[3px] sm:w-[4px] md:w-[5px] h-16 sm:h-16 md:h-20 bg-[#c14421] rounded-full" />
+          <div>
+            <p className="text-[11px] tracking-widest sm:text-sm text-[#c14421] uppercase mb-1">
+              Nuestra
+            </p>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold uppercase text-[#1e1e1e]">
               Galería
             </h2>
-            <p className="text-gray-600 leading-relaxed">
-              Explora nuestras instalaciones. Haz clic en cualquier imagen para
-              ampliarla y navega con las flechas o el teclado.
-            </p>
           </div>
+        </motion.div>
 
-          {/* Grid imágenes */}
-          <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-5 md:gap-6">
-            {IMAGES.map((g, i) => (
-              <button
-                key={g.src + i}
-                onClick={() => openAt(i)}
-                className="
-                  group relative overflow-hidden rounded-2xl bg-white
-                  ring-1 ring-black/5 shadow-sm hover:shadow-md transition
-                  focus:outline-none focus:ring-2 focus:ring-indigo-500
-                "
-                aria-label={`Abrir imagen ${i + 1}`}
-              >
-                <div className="relative w-full aspect-[4/3]">
-                  <img
-                    src={g.src}
-                    alt={g.title}
-                    loading="lazy"
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
-              </button>
-            ))}
-          </div>
+        {/* Mosaico: diseño intacto, solo cambio a whileInView */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-[200px]">
+          {IMAGES.map((g, i) => (
+            <motion.button
+              key={i}
+              onClick={() => openAt(i)}
+              className={`relative overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition group
+                ${i % 7 === 0 ? "col-span-2 row-span-2" : ""}
+              `}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.5, delay: i * 0.06, ease: "easeOut" }}
+              aria-label={`Abrir imagen: ${g.title}`}
+            >
+              <img
+                src={g.src}
+                alt={g.title}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition" />
+              <span className="absolute bottom-3 left-3 text-white font-medium drop-shadow">
+                {g.title}
+              </span>
+            </motion.button>
+          ))}
         </div>
       </div>
 
@@ -91,29 +100,68 @@ export default function Galeria() {
       {open && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-          role="dialog" aria-modal="true" onClick={close}
+          role="dialog"
+          aria-modal="true"
+          onClick={close}
         >
-          <div className="relative max-w-[92vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-            <img
+          <div
+            className="relative max-w-[92vw] max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <motion.img
+              key={item.src}
               src={item.src}
               alt={item.title}
-              className="max-w-full max-h-[90vh] rounded-xl shadow-2xl"
+              className="max-h-[90vh] rounded-xl shadow-2xl"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
             />
 
-            {/* Flechas */}
-            <button onClick={prev} aria-label="Anterior"
-              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/85 hover:bg-white text-gray-900 shadow">
-              ‹
-            </button>
-            <button onClick={next} aria-label="Siguiente"
-              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/85 hover:bg-white text-gray-900 shadow">
-              ›
+            {/* Botones con tu diseño actual */}
+            <button
+              onClick={prev}
+              aria-label="Anterior"
+              className="
+                inline-flex items-center justify-center
+                absolute left-2 sm:left-4 top-1/2 -translate-y-1/2
+                h-9 w-9 sm:h-10 sm:w-10 rounded-full
+                bg-white/80 backdrop-blur-md
+                text-[#c14421] hover:bg-[#c14421] hover:text-white
+                shadow-md transition transform hover:scale-105 active:scale-95
+              "
+            >
+              <FaChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
 
-            {/* Cerrar */}
-            <button onClick={close} aria-label="Cerrar"
-              className="absolute -top-10 right-0 sm:-top-12 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/85 hover:bg-white text-gray-900 shadow">
-              ✕
+            <button
+              onClick={next}
+              aria-label="Siguiente"
+              className="
+                inline-flex items-center justify-center
+                absolute right-2 sm:right-4 top-1/2 -translate-y-1/2
+                h-9 w-9 sm:h-10 sm:w-10 rounded-full
+                bg-white/80 backdrop-blur-md
+                text-[#c14421] hover:bg-[#c14421] hover:text-white
+                shadow-md transition transform hover:scale-105 active:scale-95
+              "
+            >
+              <FaChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+            </button>
+
+            <button
+              onClick={close}
+              aria-label="Cerrar"
+              className="
+                inline-flex items-center justify-center
+                absolute -top-10 right-0 sm:-top-12
+                h-9 w-9 sm:h-10 sm:w-10 rounded-full
+                bg-white/80 backdrop-blur-md
+                text-[#c14421] hover:bg-[#c14421] hover:text-white
+                shadow-md transition transform hover:scale-105 active:scale-95
+              "
+            >
+              <FaTimes className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
 
             <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-white/80 text-sm">

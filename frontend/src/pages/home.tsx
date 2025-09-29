@@ -6,7 +6,7 @@ import Galeria from "../components/home/galeria";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#eaeaea]">
+    <div className="min-h-screen bg-[#e5d0ac]">
       <div className="pt-6">
         <HeroSlider />
       </div>

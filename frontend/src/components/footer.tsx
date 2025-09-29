@@ -1,44 +1,39 @@
 // src/components/Footer.tsx
 import React from "react";
-import {
-  FaFacebookF,
-  FaInstagram,
-  FaMapMarkerAlt,
-  FaPhone,
-} from "react-icons/fa";
+import { FaFacebookF, FaInstagram, FaMapMarkerAlt, FaPhone } from "react-icons/fa";
 import { SiTiktok } from "react-icons/si";
 
 export default function Footer() {
   return (
     <footer className="border-t bg-white text-gray-700">
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
+      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-6">
         {/* Línea superior azul */}
-        <div className="h-[1px] w-full bg-blue-500 mb-8" />
+        <div className="h-[1px] w-full bg-[#c14421] mt-6 mb-8"/>
 
         {/* Contenido principal */}
-        <div className="grid gap-8 md:grid-cols-2 md:items-start">
-          {/* Logo */}
-          <div className="flex justify-center md:justify-start">
+        <div className="grid gap-6 md:grid-cols-2 md:items-center">
+          {/* Logo en contenedor fijo */}
+          <div className="flex justify-center md:justify-start h-[220px]">
             <img
-              src="/logo192.png" // cambia la ruta por tu logo
-              alt="Quincho Altobonito"
-              className="h-14 w-auto"
+              src="/img/logo.webp" 
+              alt="Logo"
+              className="h-full w-auto object-contain"
             />
           </div>
 
           {/* Datos de contacto */}
-          <div className="flex flex-col items-center md:items-start text-center md:text-left gap-3 md:pl-20">
-            <div className="flex items-start gap-2 max-w-[40ch]">
-              <FaMapMarkerAlt className="text-blue-600 w-5 h-5 flex-shrink-0 mt-1" />
+          <div className="flex flex-col items-center md:items-start text-center md:text-left gap-3 md:pl-12" id="contacto">
+            <div className="flex items-start gap-3 max-w-[48ch]">
+              <FaMapMarkerAlt className="text-[#c14421] w-5 h-5 flex-shrink-0 mt-1" />
               <span className="leading-relaxed">
                 Alto bonito km. 1028, Puerto Montt
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <FaPhone className="text-blue-600 w-5 h-5" />
+            <div className="flex items-center gap-3">
+              <FaPhone className="text-[#c14421] w-5 h-5" />
               <a
                 href="tel:+11234567890"
-                className="hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                className="hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#c14421] rounded"
               >
                 (56) 9 1234 5678
               </a>
@@ -47,10 +42,10 @@ export default function Footer() {
         </div>
 
         {/* Línea separadora */}
-        <div className="h-[1px] w-full bg-gray-200 mt-10 mb-4" />
+        <div className="h-[1px] w-full bg-gray-200 mt-4 mb-2" />
 
         {/* Barra inferior */}
-        <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
+        <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
           {/* Redes sociales */}
           <div className="flex gap-3">
             {[
@@ -62,7 +57,7 @@ export default function Footer() {
                 key={label}
                 href={href}
                 aria-label={label}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-blue-600 hover:text-blue-800 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#c14421] hover:text-[#1e1e1e] hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-200 transition"
               >
                 <Icon className="w-4 h-4" />
               </a>
@@ -71,7 +66,7 @@ export default function Footer() {
 
           {/* Copyright */}
           <div className="text-xs text-gray-500 text-center sm:text-right">
-            © {new Date().getFullYear()} — Quincho Altobonito.
+            © {new Date().getFullYear()} — Quincho Altoonito.
           </div>
         </div>
       </div>

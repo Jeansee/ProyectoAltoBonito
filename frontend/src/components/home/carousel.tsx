@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import s from "./home.module.css";
 
 type Slide = { image: string; title: string; description: string };
@@ -87,12 +88,14 @@ export default function HeroSlider() {
   return (
     <section
       className="
-        relative mx-auto w-full max-w-[1200px]
+        relative not-prose isolate mx-auto w-full max-w-[1600px]
         h-[60vh] sm:h-[70vh] md:h-[600px]
-        bg-[#f5f5f5] shadow-[0_30px_50px_#dbdbdb]
-        overflow-hidden rounded-none md:rounded-xl
+        bg-[#e5d0ac] overflow-hidden
+        -mt-16 sm:-mt-16 md:-mt-16 lg:-mt-16 xl:-mt-16 2xl:-mt-16
       "
       aria-label="Image slider"
+
+      id="inicio"
     >
       {/* Fondos animados */}
       {animating && prevMain && (
@@ -120,15 +123,29 @@ export default function HeroSlider() {
       />
 
       {/* Texto fijo a la izquierda */}
-      <div className="absolute left-8 sm:left-10 md:left-12 top-1/2 -translate-y-1/2 max-w-sm text-white z-20">
-        <p className="text-[11px] sm:text-xs mb-2">Bienvenido a</p>
-        <h3 className="text-[28px] sm:text-[34px] md:text-[48px] font-extrabold uppercase drop-shadow">
-          Quincho Alto Bonito
-        </h3>
-        <button className="mt-6 rounded-full bg-white px-5 py-2 font-semibold text-blue-600 shadow hover:shadow-lg transition">
-          Button
-        </button>
-      </div>
+        <div className="absolute left-8 sm:left-10 md:left-12 top-1/2 -translate-y-1/2 z-20">
+          <div className="flex items-start gap-4">
+            {/* Línea vertical decorativa */}
+            <span
+              className="block w-[3px] sm:w-[4px] md:w-[5px]
+                        h-28 sm:h-36 md:h-44
+                        rounded-full
+                        bg-[#c14421]"
+              aria-hidden
+            />
+            <div className="max-w-sm text-white">
+              {/* Subtítulo (antes decía “Bienvenido a”) */}
+              <p className="text-[11px] sm:text-sm tracking-widest uppercase text-white/90 mb-1">
+                Bienvenido a
+              </p>
+
+              {/* Título principal */}
+              <h3 className="text-[28px] sm:text-[34px] md:text-[48px] font-extrabold uppercase drop-shadow">
+                Quincho Alto Bonito
+              </h3>
+            </div>
+          </div>
+        </div>
 
       {/* Tarjetas a la derecha */}
       <div className="absolute inset-0">
@@ -157,24 +174,37 @@ export default function HeroSlider() {
       </div>
 
       {/* Controles */}
-      <div className="absolute bottom-5 left-0 right-0 text-center z-20">
-        <button
-          onClick={prev}
-          className="mx-1 h-9 w-10 rounded-md border border-black hover:bg-gray-400 hover:text-white transition"
-          aria-label="Anterior"
-        >
-          ‹
-        </button>
-        <button
-          onClick={next}
-          className="mx-1 h-9 w-10 rounded-md border border-black hover:bg-gray-400 hover:text-white transition"
-          aria-label="Siguiente"
-        >
-          ›
-        </button>
-      </div>
 
-      {/* Overlay oscuro */}
+        <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-3 z-20">
+          <button
+            onClick={prev}
+            aria-label="Anterior"
+            className="
+              inline-flex items-center justify-center
+              h-9 w-9 sm:h-10 sm:w-10 rounded-full
+              bg-white/80 backdrop-blur-md
+              text-[#c14421] hover:bg-[#c14421] hover:text-white
+              shadow-md transition transform hover:scale-105 active:scale-95
+            "
+          >
+            <FaChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+          </button>
+
+          <button
+            onClick={next}
+            aria-label="Siguiente"
+            className="
+              inline-flex items-center justify-center
+              h-9 w-9 sm:h-10 sm:w-10 rounded-full
+              bg-white/80 backdrop-blur-md
+              text-[#c14421] hover:bg-[#c14421] hover:text-white
+              shadow-md transition transform hover:scale-105 active:scale-95
+            "
+          >
+            <FaChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+          </button>
+        </div>
+
       <div
         className="pointer-events-none absolute inset-0 bg-black/15 md:bg-black/25"
         aria-hidden
