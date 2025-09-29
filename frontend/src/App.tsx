@@ -5,8 +5,9 @@ import Login from "./pages/loginyregistro/login";
 import Registro from "./pages/loginyregistro/registro";
 import Perfil from "./pages/usuario/perfil";
 import Footer from "./components/footer";
-import PrivateRoute from "../src/routes/privateroute";
-import RecursosPage from "./pages/recursos"; // ⬅️ nuevo import
+import RecursosPage from "./pages/recursos";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import RedirectIfAuthenticated from "./components/auth/RedirectIfAuthenticated";
 
 export default function App() {
   return (
@@ -15,13 +16,30 @@ export default function App() {
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Registro />} />
-          <Route path="/recursos" element={<RecursosPage />} /> {/* ⬅️ nueva ruta */}
-          {/* Protegido */}
-          <Route element={<PrivateRoute />}>
-            <Route path="/perfil" element={<Perfil />} />
-          </Route>
+          
+          {/* Rutas públicas solo para usuarios no autenticados */}
+          <Route path="/login" element={
+            <RedirectIfAuthenticated>
+              <Login />
+            </RedirectIfAuthenticated>
+          } />
+          <Route path="/register" element={
+            <RedirectIfAuthenticated>
+              <Registro />
+            </RedirectIfAuthenticated>
+          } />
+
+          {/* Rutas protegidas */}
+          <Route path="/recursos" element={
+            <ProtectedRoute>
+              <RecursosPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/perfil" element={
+            <ProtectedRoute>
+              <Perfil />
+            </ProtectedRoute>
+          } />
         </Routes>
       </main>
       <Footer />

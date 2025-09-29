@@ -9,6 +9,7 @@ type AuthCtx = {
     nombre: string; apellido: string; correo: string; telefono: string; password: string; whatsapp?: string;
   }) => Promise<void>;
   logout: () => void;
+  updateUser: (user: User, token?: string) => void;
 };
 
 const Ctx = createContext<AuthCtx | undefined>(undefined);
@@ -31,29 +32,34 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
-  const persist = (u: User, t: string) => {
-    setUser(u); setToken(t);
-    localStorage.setItem("token", t);
+  const updateUser = (u: User, t?: string) => {
+    setUser(u);
+    if (t) {
+      setToken(t);
+      localStorage.setItem("token", t);
+    }
     localStorage.setItem("user", JSON.stringify(u));
   };
 
   const login = async (correo: string, password: string) => {
     const { user, token } = await loginUser({ correo, password });
-    persist(user, token);
+    updateUser(user, token);
   };
 
   const register = async (p: {
     nombre: string; apellido: string; correo: string; telefono: string; password: string; whatsapp?: string;
   }) => {
     const { user, token } = await registerUser(p);
-    persist(user, token);
+    updateUser(user, token);
   };
 
   const logout = () => {
-    setUser(null); setToken(null);
-    localStorage.removeItem("token"); localStorage.removeItem("user");
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     window.location.href = "/";
   };
 
-  return <Ctx.Provider value={{ user, token, login, register, logout }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, token, login, register, logout, updateUser }}>{children}</Ctx.Provider>;
 }
