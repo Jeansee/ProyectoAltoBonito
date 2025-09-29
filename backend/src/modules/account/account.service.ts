@@ -3,6 +3,7 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -10,7 +11,10 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AccountService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly jwt: JwtService,
+  ) {}
   private get prisma() { return this.prismaService.prisma; }
 
   me(userId: string) {
@@ -22,7 +26,7 @@ export class AccountService {
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     try {
-      return await this.prisma.usuario.update({
+      const updatedUser = await this.prisma.usuario.update({
         where: { id: userId },
         data: {
           ...(dto.nombre !== undefined && { nombre: dto.nombre }),
@@ -30,8 +34,25 @@ export class AccountService {
           ...(dto.telefono !== undefined && { telefono: dto.telefono }),
           ...(dto.whatsapp !== undefined && { whatsapp: dto.whatsapp ?? null }),
         },
-        select: { id: true, nombre: true, apellido: true, correo: true, telefono: true, rol: true, createdAt: true },
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          correo: true,
+          telefono: true,
+          rol: true,
+          createdAt: true,
+        },
       });
+
+      // Generar nuevo token con la información actualizada
+      const token = await this.jwt.signAsync({
+        sub: updatedUser.id,
+        correo: updatedUser.correo,
+        rol: updatedUser.rol,
+      });
+
+      return { user: updatedUser, token };
     } catch (e) {
       console.error('ACCOUNT UPDATE PROFILE ERROR', e);
       throw new InternalServerErrorException();
