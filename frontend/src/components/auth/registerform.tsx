@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { registerUser } from "@/services/auth.service";
 import { isValidEmail, isValidPhoneCL, isStrongPassword } from "@/utils/validators";
 import { motion } from "framer-motion";
+import { FaUserPlus } from "react-icons/fa";
+import s from "@/components/home/home.module.css";
 
 type Form = {
   nombre: string;
@@ -68,37 +70,42 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Lado izquierdo con imagen */}
-      <div className="hidden md:flex w-1/2 relative">
-        <img
-          src="https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1400&q=80"
-          alt="Fondo"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/30 flex flex-col justify-center items-center text-white px-10">
-          <h1 className="text-4xl font-bold mb-4 text-center">
-            Bienvenido a nuestra comunidad
-          </h1>
-          <p className="text-lg text-center max-w-md">
-            Crea tu cuenta y comienza a disfrutar de todos nuestros servicios con seguridad y confianza.
+      {/* Lado izquierdo con gradiente (mismo estilo que Login) */}
+      <div className={`${s.bgFire} hidden md:flex md:w-1/2 items-center justify-center p-10 text-white relative overflow-hidden`}>
+        <motion.div
+          initial={{ scale: 0.92, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.7 }}
+          className="z-10 text-center max-w-md"
+        >
+          <h1 className="text-4xl font-extrabold mb-4">Crea tu cuenta</h1>
+          <p className="text-lg text-white/80">
+            Únete y reserva tu espacio ideal.
           </p>
-        </div>
+        </motion.div>
       </div>
 
-      {/* Lado derecho con formulario (sin container encajonado) */}
+      {/* Lado derecho con formulario */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-gray-50">
         <motion.form
           onSubmit={onSubmit}
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-          className="w-full max-w-lg space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-8 space-y-6"
         >
           <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center rounded-2xl text-white text-3xl shadow-md">
-              🚀
-            </div>
-            <h2 className="mt-4 text-3xl font-bold text-gray-800">Crear cuenta</h2>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="w-16 h-16 mx-auto rounded-full bg-[#e5d0ac]/40 text-[#c14421] 
+                        flex items-center justify-center text-2xl font-bold shadow-inner"
+            >
+              <span className="relative z-10">
+                <FaUserPlus />
+              </span>
+            </motion.div>
+
+            <h2 className="mt-4 text-2xl font-bold text-[#1e1e1e]">Crear cuenta</h2>
             <p className="text-gray-500 text-sm">Llena el formulario para registrarte</p>
           </div>
 
@@ -115,7 +122,7 @@ export default function RegisterPage() {
                 name="nombre"
                 value={form.nombre}
                 onChange={onChange}
-                className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-[#c14421] outline-none"
               />
             </div>
             <div>
@@ -124,7 +131,7 @@ export default function RegisterPage() {
                 name="apellido"
                 value={form.apellido}
                 onChange={onChange}
-                className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-[#c14421] outline-none"
               />
             </div>
           </div>
@@ -136,7 +143,7 @@ export default function RegisterPage() {
               type="email"
               value={form.correo}
               onChange={onChange}
-              className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-[#c14421] outline-none"
             />
           </div>
 
@@ -147,7 +154,7 @@ export default function RegisterPage() {
               placeholder="+56912345678"
               value={form.telefono}
               onChange={onChange}
-              className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-[#c14421] outline-none"
             />
           </div>
 
@@ -159,7 +166,7 @@ export default function RegisterPage() {
                 type="password"
                 value={form.password}
                 onChange={onChange}
-                className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-[#c14421] outline-none"
               />
             </div>
             <div>
@@ -169,7 +176,7 @@ export default function RegisterPage() {
                 type="password"
                 value={form.confirm}
                 onChange={onChange}
-                className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-[#c14421] outline-none"
               />
             </div>
           </div>
@@ -180,23 +187,28 @@ export default function RegisterPage() {
               name="acepto"
               checked={form.acepto}
               onChange={onChange}
-              className="rounded border-gray-300 focus:ring-blue-500"
+              className="h-3 w-3 rounded border-gray-300 accent-[#c14421] focus:ring-[#c14421]"
             />
             Acepto términos y condiciones
           </label>
 
+          {/* Botón con el mismo estilo que en Login */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg hover:shadow-xl transition"
+            className="w-full mt-2 inline-flex items-center justify-center gap-2
+                       rounded-full bg-gradient-to-r from-[#ffb26a] to-[#c14421]
+                       text-white px-6 py-3 text-sm font-semibold shadow-md
+                       hover:shadow-xl hover:brightness-110 transition-all
+                       disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading ? "Creando cuenta..." : "Crear cuenta"}
           </motion.button>
 
           <p className="text-sm text-center text-gray-600">
             ¿Ya tienes cuenta?{" "}
-            <a href="/login" className="text-blue-600 font-medium hover:underline">
+            <a href="/login" className="text-[#c14421] font-medium hover:underline">
               Inicia sesión
             </a>
           </p>

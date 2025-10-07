@@ -138,4 +138,31 @@
   animation: shimmer 3s linear infinite;
 }
 
+/* Fondo cálido con movimiento flotante natural */
+.bgFire {
+  background: radial-gradient(circle, #ffb26a, #c14421, #ffb26a);
+  background-size: 300% 300%;
+  animation: gradientDrift 10s ease-in-out infinite;
+}
+
+/* Movimiento de deriva suave tipo 'flotante' */
+@keyframes gradientDrift {
+  0% {
+    background-position: 20% 30%;
+  }
+  25% {
+    background-position: 80% 20%;
+  }
+  50% {
+    background-position: 70% 80%;
+  }
+  75% {
+    background-position: 30% 70%;
+  }
+  100% {
+    background-position: 20% 30%;
+  }
+}
+
+
 

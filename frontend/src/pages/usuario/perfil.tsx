@@ -73,284 +73,274 @@ export default function PerfilPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fff6ec] via-white to-[#ffe9d3]">
-      <div className="mx-auto max-w-5xl px-4 py-10">
-        {/* Hero con animación */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="flex flex-col items-center text-center mb-10"
-        >
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="w-28 h-28 rounded-full bg-[#ffb26a]/25 flex items-center justify-center text-[#c14421] text-3xl font-bold shadow-inner"
-          >
-            {user.nombre?.[0] || "U"}
-          </motion.div>
-          <h1 className="mt-4 text-2xl md:text-3xl font-bold text-gray-800">
-            {user.nombre} {user.apellido}
-          </h1>
-          <p className="text-gray-500">{user.correo}</p>
-          <motion.span
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="mt-2 inline-block px-3 py-1 rounded-full bg-[#ffb26a]/30 text-[#c14421] text-sm shadow-sm"
-          >
-            {user.rol}
-          </motion.span>
-        </motion.div>
-
-        {/* Tabs */}
-        <div className="flex justify-center mb-10">
-          <motion.nav layout className="flex space-x-2 bg-white rounded-xl shadow p-1">
-            <button
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
-                tab === "perfil"
-                  ? "bg-[#c14421] text-white shadow"
-                  : "text-gray-700 hover:bg-[#ffb26a]/20"
-              }`}
-              onClick={() => setTab("perfil")}
-            >
-              Perfil
-            </button>
-            <button
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
-                tab === "password"
-                  ? "bg-[#c14421] text-white shadow"
-                  : "text-gray-700 hover:bg-[#ffb26a]/20"
-              }`}
-              onClick={() => setTab("password")}
-            >
-              Cambiar contraseña
-            </button>
-          </motion.nav>
-        </div>
-
-        {/* Contenido con transiciones */}
-        <AnimatePresence mode="wait">
-          {tab === "perfil" && (
+      <div className="mx-auto max-w-6xl px-4 py-10">
+        {/* Layout: sidebar izquierda + contenido derecha */}
+        <div className="grid grid-cols-1 md:grid-cols-[280px,1fr] gap-8">
+          {/* Sidebar izquierda (responsivo en altura) */}
+          <aside className="bg-white rounded-2xl shadow p-6 flex flex-col items-center min-h-[420px] sm:min-h-[500px] md:min-h-[700px]">
             <motion.div
-              key="perfil"
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -40 }}
-              transition={{ duration: 0.4 }}
-              className="bg-white rounded-2xl shadow-lg p-6 md:p-8 max-w-2xl mx-auto hover:shadow-xl"
+              whileHover={{ scale: 1.05 }}
+              className="w-24 h-24 rounded-full bg-[#ffb26a]/25 flex items-center justify-center text-[#c14421] text-3xl font-bold shadow-inner"
             >
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-gray-800">
-                  Información del usuario
-                </h2>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    if (editMode) {
-                      setEditMode(false);
-                      setFormData({
-                        nombre: user.nombre,
-                        apellido: user.apellido,
-                        telefono: user.telefono,
-                      });
-                    } else {
-                      setEditMode(true);
-                    }
-                  }}
-                  className="text-sm px-4 py-1.5 rounded-lg bg-[#c14421] text-white hover:bg-[#1e1e1e] shadow-sm"
-                >
-                  {editMode ? "Cancelar" : "Editar"}
-                </motion.button>
-              </div>
-
-              <AnimatePresence mode="wait">
-                {editMode ? (
-                  <motion.form
-                    key="edit-form"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.4 }}
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      setErr(null);
-                      setMsg(null);
-                      try {
-                        setIsLoading(true);
-                        const response = await updateProfile(formData);
-                        updateUser(response.user, response.token);
-                        setEditMode(false);
-                        setMsg("Perfil actualizado con éxito");
-                        setFormData({
-                          nombre: response.user.nombre,
-                          apellido: response.user.apellido,
-                          telefono: response.user.telefono,
-                        });
-                      } catch (e: any) {
-                        setErr(e?.response?.data?.message || "Error al actualizar el perfil");
-                      } finally {
-                        setIsLoading(false);
-                      }
-                    }}
-                    className="space-y-5"
-                  >
-                    <div>
-                      <label className="block text-sm text-gray-500 mb-1">Nombre</label>
-                      <input
-                        type="text"
-                        value={formData.nombre}
-                        onChange={(e) =>
-                          setFormData((prev) => ({ ...prev, nombre: e.target.value }))
-                        }
-                        className="w-full border rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-[#ffb26a] outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-500 mb-1">Apellido</label>
-                      <input
-                        type="text"
-                        value={formData.apellido}
-                        onChange={(e) =>
-                          setFormData((prev) => ({ ...prev, apellido: e.target.value }))
-                        }
-                        className="w-full border rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-[#ffb26a] outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-500 mb-1">Teléfono</label>
-                      <input
-                        type="text"
-                        value={formData.telefono}
-                        onChange={(e) =>
-                          setFormData((prev) => ({ ...prev, telefono: e.target.value }))
-                        }
-                        className="w-full border rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-[#ffb26a] outline-none"
-                      />
-                    </div>
-                    <div>
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full bg-[#c14421] text-white rounded-lg py-2 font-medium hover:bg-[#1e1e1e] disabled:opacity-60 shadow"
-                      >
-                        {isLoading ? "Guardando..." : "Guardar cambios"}
-                      </button>
-                    </div>
-                  </motion.form>
-                ) : (
-                  <motion.div
-                    key="view-info"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.4 }}
-                    className="space-y-4 text-sm"
-                  >
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Nombre:</span>
-                      <span className="font-medium">
-                        {user.nombre} {user.apellido}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Correo:</span>
-                      <span className="font-medium">{user.correo}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Teléfono:</span>
-                      <span className="font-medium">{user.telefono}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Rol:</span>
-                      <span className="font-medium">{user.rol}</span>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {msg && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mt-5 text-sm text-green-700 bg-green-50 border border-green-200 p-3 rounded-lg"
-                >
-                  {msg}
-                </motion.div>
-              )}
-              {err && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mt-5 text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded-lg"
-                >
-                  {err}
-                </motion.div>
-              )}
+              {user.nombre?.[0] || "U"}
             </motion.div>
-          )}
 
-          {tab === "password" && (
-            <motion.form
-              key="password"
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -40 }}
-              transition={{ duration: 0.4 }}
-              onSubmit={savePassword}
-              className="max-w-md mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8 space-y-5 hover:shadow-xl"
-            >
-              <h2 className="text-lg font-semibold mb-4 text-gray-800">
-                Cambiar contraseña
-              </h2>
+            <div className="mt-4 text-center">
+              <h1 className="text-xl font-bold text-[#1e1e1e]">
+                {user.nombre} {user.apellido}
+              </h1>
+              <p className="text-gray-500 text-sm">{user.correo}</p>
+            </div>
 
-              {msg && (
-                <div className="text-sm text-green-700 bg-green-50 border border-green-200 p-3 rounded-lg">
-                  {msg}
-                </div>
-              )}
-              {err && (
-                <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded-lg">
-                  {err}
-                </div>
-              )}
+            <div className="w-24 h-px bg-[#1e1e1e]/30 my-4" />
 
-              <div>
-                <label className="block text-sm mb-1">Contraseña actual</label>
-                <input
-                  type="password"
-                  className="w-full border rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-[#ffb26a] outline-none"
-                  value={currentPassword}
-                  onChange={(e) => setCurrent(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Nueva contraseña</label>
-                <input
-                  type="password"
-                  className="w-full border rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-[#ffb26a] outline-none"
-                  value={newPassword}
-                  onChange={(e) => setNew(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Confirmar nueva contraseña</label>
-                <input
-                  type="password"
-                  className="w-full border rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-[#ffb26a] outline-none"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                />
-              </div>
-
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                disabled={isLoading}
-                className="w-full bg-[#c14421] text-white rounded-lg py-2 font-medium hover:bg-[#1e1e1e] disabled:opacity-60 shadow"
+            {/* Botones verticales */}
+            <nav className="w-full flex flex-col gap-3 mt-2">
+              <button
+                className={`w-full px-4 py-2 rounded-full text-sm font-medium transition
+                  ${tab === "perfil"
+                    ? "bg-[#c14421] text-white shadow"
+                    : "bg-white border border-gray-200 text-[#1e1e1e] hover:bg-[#ffb26a]/20"}`}
+                onClick={() => setTab("perfil")}
               >
-                {isLoading ? "Guardando..." : "Guardar cambios"}
-              </motion.button>
-            </motion.form>
-          )}
-        </AnimatePresence>
+                Perfil
+              </button>
+
+              <button
+                className={`w-full px-4 py-2 rounded-full text-sm font-medium transition
+                  ${tab === "password"
+                    ? "bg-[#c14421] text-white shadow"
+                    : "bg-white border border-gray-200 text-[#1e1e1e] hover:bg-[#ffb26a]/20"}`}
+                onClick={() => setTab("password")}
+              >
+                Cambiar contraseña
+              </button>
+            </nav>
+          </aside>
+
+          {/* Contenedor derecho alto (con respiro arriba/abajo) */}
+          <section className="flex items-start justify-center min-h-[600px] sm:min-h-[650px] md:min-h-[720px]">
+            <AnimatePresence mode="wait">
+              {tab === "perfil" && (
+                <motion.div
+                  key="perfil"
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -40 }}
+                  transition={{ duration: 0.4 }}
+                  className="relative w-full max-w-3xl bg-white/90 backdrop-blur-sm rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] ring-1 ring-gray-100"
+                >
+                  {/* Barra de acento superior */}
+                  <div className="absolute inset-x-0 top-0 h-1.5 rounded-t-3xl bg-gradient-to-r from-[#ffb26a] via-[#c14421] to-[#ffb26a]" />
+
+                  <div className="p-6 md:p-10 pt-10">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-xl md:text-2xl font-semibold text-[#1e1e1e]">
+                        Información del usuario
+                      </h2>
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          if (editMode) {
+                            setEditMode(false);
+                            setFormData({
+                              nombre: user.nombre,
+                              apellido: user.apellido,
+                              telefono: user.telefono,
+                            });
+                          } else {
+                            setEditMode(true);
+                          }
+                        }}
+                        className="text-sm px-4 py-2 rounded-full bg-[#c14421] text-white hover:bg-[#1e1e1e] shadow-sm"
+                      >
+                        {editMode ? "Cancelar" : "Editar"}
+                      </motion.button>
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                      {editMode ? (
+                        <motion.form
+                          key="edit-form"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.4 }}
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            setErr(null);
+                            setMsg(null);
+                            try {
+                              setIsLoading(true);
+                              const response = await updateProfile(formData);
+                              updateUser(response.user, response.token);
+                              setEditMode(false);
+                              setMsg("Perfil actualizado con éxito");
+                              setFormData({
+                                nombre: response.user.nombre,
+                                apellido: response.user.apellido,
+                                telefono: response.user.telefono,
+                              });
+                            } catch (e: any) {
+                              setErr(e?.response?.data?.message || "Error al actualizar el perfil");
+                            } finally {
+                              setIsLoading(false);
+                            }
+                          }}
+                          className="space-y-6"
+                        >
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                              <label className="block text-sm text-gray-500 mb-1">Nombre</label>
+                              <input
+                                type="text"
+                                value={formData.nombre}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, nombre: e.target.value }))}
+                                className="w-full border rounded-xl px-3 py-2 shadow-sm focus:ring-2 focus:ring-[#c14421] outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm text-gray-500 mb-1">Apellido</label>
+                              <input
+                                type="text"
+                                value={formData.apellido}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, apellido: e.target.value }))}
+                                className="w-full border rounded-xl px-3 py-2 shadow-sm focus:ring-2 focus:ring-[#c14421] outline-none"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="block text-sm text-gray-500 mb-1">Teléfono</label>
+                              <input
+                                type="text"
+                                value={formData.telefono}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, telefono: e.target.value }))}
+                                className="w-full border rounded-xl px-3 py-2 shadow-sm focus:ring-2 focus:ring-[#c14421] outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          {msg && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                              className="text-sm text-green-700 bg-green-50 border border-green-200 p-3 rounded-lg">
+                              {msg}
+                            </motion.div>
+                          )}
+                          {err && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                              className="text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded-lg">
+                              {err}
+                            </motion.div>
+                          )}
+
+                          <div className="pt-2 flex justify-end">
+                            <button
+                              type="submit"
+                              disabled={isLoading}
+                              className="px-5 bg-[#c14421] text-white rounded-full py-2 font-medium hover:bg-[#1e1e1e] disabled:opacity-60 shadow"
+                            >
+                              {isLoading ? "Guardando..." : "Guardar cambios"}
+                            </button>
+                          </div>
+                        </motion.form>
+                      ) : (
+                        <motion.div
+                          key="view-info"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.4 }}
+                          className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"
+                        >
+                          <div className="flex items-center justify-between bg-gray-50 rounded-xl p-3">
+                            <span className="text-gray-500">Nombre</span>
+                            <span className="font-medium">{user.nombre} {user.apellido}</span>
+                          </div>
+                          <div className="flex items-center justify-between bg-gray-50 rounded-xl p-3">
+                            <span className="text-gray-500">Correo</span>
+                            <span className="font-medium break-all">{user.correo}</span>
+                          </div>
+                          <div className="flex items-center justify-between bg-gray-50 rounded-xl p-3">
+                            <span className="text-gray-500">Teléfono</span>
+                            <span className="font-medium">{user.telefono}</span>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              )}
+
+              {tab === "password" && (
+                <motion.form
+                  key="password"
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -40 }}
+                  transition={{ duration: 0.4 }}
+                  onSubmit={savePassword}
+                  className="relative w-full max-w-3xl bg-white/90 backdrop-blur-sm rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] ring-1 ring-gray-100 p-6 md:p-10 pt-10 space-y-5"
+                >
+                  <div className="absolute inset-x-0 top-0 h-1.5 rounded-t-3xl bg-gradient-to-r from-[#ffb26a] via-[#c14421] to-[#ffb26a]" />
+
+                  <h2 className="text-xl md:text-2xl font-semibold text-[#1e1e1e] mb-2">
+                    Cambiar contraseña
+                  </h2>
+
+                  {msg && (
+                    <div className="text-sm text-green-700 bg-green-50 border border-green-200 p-3 rounded-lg">
+                      {msg}
+                    </div>
+                  )}
+                  {err && (
+                    <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded-lg">
+                      {err}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm mb-1">Contraseña actual</label>
+                      <input
+                        type="password"
+                        className="w-full border rounded-xl px-3 py-2 shadow-sm focus:ring-2 focus:ring-[#c14421] outline-none"
+                        value={currentPassword}
+                        onChange={(e) => setCurrent(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-1">Nueva contraseña</label>
+                      <input
+                        type="password"
+                        className="w-full border rounded-xl px-3 py-2 shadow-sm focus:ring-2 focus:ring-[#c14421] outline-none"
+                        value={newPassword}
+                        onChange={(e) => setNew(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-1">Confirmar nueva contraseña</label>
+                      <input
+                        type="password"
+                        className="w-full border rounded-xl px-3 py-2 shadow-sm focus:ring-2 focus:ring-[#c14421] outline-none"
+                        value={confirm}
+                        onChange={(e) => setConfirm(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      disabled={isLoading}
+                      className="px-5 bg-[#c14421] text-white rounded-full py-2 font-medium hover:bg-[#1e1e1e] disabled:opacity-60 shadow"
+                    >
+                      {isLoading ? "Guardando..." : "Guardar cambios"}
+                    </motion.button>
+                  </div>
+                </motion.form>
+              )}
+            </AnimatePresence>
+          </section>
+        </div>
       </div>
     </div>
   );
