@@ -1,9 +1,12 @@
+// backend/prisma/seed.ts  (o donde lo ejecutes hoy)
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+// --- helpers ---
 function horarios10a22() {
+  // 0=Dom ... 6=Sáb
   return Array.from({ length: 7 }, (_, dia) => ({
     diaSemana: dia,
     abreMin: 10 * 60,   // 10:00
@@ -12,6 +15,55 @@ function horarios10a22() {
   }));
 }
 
+async function ensureHorarios10a22(recursoId: string) {
+  const base = horarios10a22();
+  for (const h of base) {
+    // unique esperado: (recursoId, diaSemana)
+    const existing = await prisma.horario.findFirst({
+      where: { recursoId, diaSemana: h.diaSemana },
+      select: { id: true },
+    });
+
+    if (existing) {
+      await prisma.horario.update({
+        where: { id: existing.id },
+        data: { abreMin: h.abreMin, cierraMin: h.cierraMin, activo: true },
+      });
+    } else {
+      await prisma.horario.create({
+        data: { recursoId, ...h },
+      });
+    }
+  }
+}
+
+async function ensureTurnoNoche(recursoId: string, precioDiaCLP: number, precioHoraCLP: number) {
+  const nombre = 'Turno Noche';
+  const existing = await prisma.turno.findFirst({
+    where: { recursoId, nombre },
+    select: { id: true },
+  });
+
+  const precioFijoCLP = Math.max(Math.floor(precioDiaCLP * 0.6), precioHoraCLP * 5);
+
+  const payload = {
+    nombre,
+    descripcion: 'Turno nocturno de fines de semana',
+    inicioMin: 19 * 60, // 19:00
+    finMin: 4 * 60,     // 04:00 del día siguiente
+    diasSemana: [5, 6], // viernes-sábado
+    precioFijoCLP,
+    activo: true,
+  };
+
+  if (existing) {
+    await prisma.turno.update({ where: { id: existing.id }, data: payload });
+  } else {
+    await prisma.turno.create({ data: { recursoId, ...payload } });
+  }
+}
+
+// --- users ---
 async function createOrUpdateAdmin() {
   const correo = 'admin@alto-bonito.cl';
   const passwordPlano = 'Admin1234!';
@@ -72,6 +124,7 @@ async function createSampleClient() {
   console.log('✅ CLIENTE:', correo, 'clave:', passwordPlano);
 }
 
+// --- recursos ---
 async function seedRecurso(data: {
   nombre: string;
   tipo: 'QUINCHO' | 'PISCINA' | 'CANCHA';
@@ -85,13 +138,6 @@ async function seedRecurso(data: {
   diasAnticipacion?: number;
   descripcion?: string;
 }) {
-  // 1) busca si ya existe por (tipo, nombre)
-  const existing = await prisma.recurso.findFirst({
-    where: { tipo: data.tipo as any, nombre: data.nombre },
-    select: { id: true },
-  });
-
-  // Datos comunes (create/update)
   const baseData = {
     ...data,
     activo: true,
@@ -100,43 +146,39 @@ async function seedRecurso(data: {
     diasAnticipacion: data.diasAnticipacion ?? 30,
   };
 
+  // busca (tipo, nombre)
+  const existing = await prisma.recurso.findFirst({
+    where: { tipo: data.tipo as any, nombre: data.nombre },
+    select: { id: true, precioDiaCLP: true, precioHoraCLP: true },
+  });
+
+  let recursoId: string;
+
   if (existing) {
-    // 2) UPDATE si existe
-    return prisma.recurso.update({
+    const r = await prisma.recurso.update({
       where: { id: existing.id },
+      data: baseData,
+      select: { id: true, precioDiaCLP: true, precioHoraCLP: true },
+    });
+    recursoId = r.id;
+    // Asegura horarios/turnos también en UPDATE
+    await ensureHorarios10a22(recursoId);
+    await ensureTurnoNoche(recursoId, r.precioDiaCLP, r.precioHoraCLP);
+  } else {
+    const r = await prisma.recurso.create({
       data: {
         ...baseData,
-        // si quieres, no toques horarios/turnos aquí para no duplicar:
-        // quítalos del update y solo mantenlos en create
+        // crea al vuelo el set inicial, pero igual usamos ensures por idempotencia
+        horarios: { create: horarios10a22() },
       },
+      select: { id: true, precioDiaCLP: true, precioHoraCLP: true },
     });
+    recursoId = r.id;
+    await ensureTurnoNoche(recursoId, r.precioDiaCLP, r.precioHoraCLP);
   }
 
-  // 3) CREATE si no existe (con horarios + turno)
-  return prisma.recurso.create({
-    data: {
-      ...baseData,
-      horarios: { create: horarios10a22() },
-      turnos: {
-        create: [
-          {
-            nombre: 'Turno Noche',
-            descripcion: 'Turno nocturno de fines de semana',
-            inicioMin: 19 * 60, // 19:00
-            finMin: 4 * 60,     // 04:00 del día siguiente
-            diasSemana: [5, 6], // vie-sáb
-            precioFijoCLP: Math.max(
-              Math.floor(data.precioDiaCLP * 0.6),
-              data.precioHoraCLP * 5
-            ),
-            activo: true,
-          },
-        ],
-      },
-    },
-  });
+  console.log(`✅ Recurso listo: ${data.nombre}`);
 }
-
 
 async function main() {
   console.log('🌱 Seeding Quincho Alto Bonito…');
@@ -177,7 +219,19 @@ async function main() {
     descripcion: 'Cancha multiuso ideal para fútbol y actividades recreativas.',
   });
 
+  // Además, si ya tenías recursos antiguos sin horarios, refuerza:
+  const all = await prisma.recurso.findMany({ select: { id: true, nombre: true, precioDiaCLP: true, precioHoraCLP: true } });
+  for (const r of all) {
+    await ensureHorarios10a22(r.id);
+    await ensureTurnoNoche(r.id, r.precioDiaCLP, r.precioHoraCLP);
+  }
+
   console.log('✅ Seed completo');
 }
 
-main().finally(() => prisma.$disconnect());
+main()
+  .catch((e) => {
+    console.error('❌ Seed error', e);
+    process.exit(1);
+  })
+  .finally(() => prisma.$disconnect());

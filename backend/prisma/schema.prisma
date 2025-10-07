@@ -11,6 +11,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+generator prisma_client {
+  provider = "prisma-client-js"
+  seed = "ts-node prisma/seed.ts"
+}
+
 // ================ Enumeraciones ================
 enum TipoRecurso {
   QUINCHO       // Espacio principal para eventos

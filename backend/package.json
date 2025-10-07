@@ -10,7 +10,8 @@
     "start:dev": "nest start --watch",
     "start": "nest start",
     "db:gen": "prisma generate",
-    "db:push": "prisma db push --skip-generate"
+    "db:push": "prisma db push --skip-generate",
+    "db:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

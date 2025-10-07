@@ -88,7 +88,7 @@ export default function HeroSlider() {
   return (
     <section
       className="
-        relative not-prose isolate mx-auto w-full max-w-[1600px]
+        relative not-prose isolate mx-auto w-full
         h-[60vh] sm:h-[70vh] md:h-[600px]
         bg-[#e5d0ac] overflow-hidden
         -mt-16 sm:-mt-16 md:-mt-16 lg:-mt-16 xl:-mt-16 2xl:-mt-16

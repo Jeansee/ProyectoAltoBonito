@@ -1,73 +1,59 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
-type Tipo = "QUINCHO" | "PISCINA" | "CANCHA";
-type Modalidad = "POR_HORA" | "DIA_COMPLETO" | "BLOQUE";
+interface QuickReserveModalProps {
+  recurso: any;
+  onClose: () => void;
+}
 
-export default function QuickReserveModal({
-  open, onClose, defaultTipo
-}: { open: boolean; onClose: ()=>void; defaultTipo: Tipo; }) {
-  const navigate = useNavigate();
-  const [modalidad, setModalidad] = useState<Modalidad>("POR_HORA");
-  const [fecha, setFecha] = useState<string>("");
-  const [hora, setHora] = useState<string>("19:00");
-
-  if (!open) return null;
-
-  const go = () => {
-    const params = new URLSearchParams({
-      tipo: defaultTipo,
-      modalidad,
-      fecha,
-      activo: "true",
-    });
-    if (modalidad === "POR_HORA" && hora) params.set("hora", hora);
-    onClose();
-    navigate(`/recursos?${params.toString()}`);
-  };
+export default function QuickReserveModal({ recurso, onClose }: QuickReserveModalProps) {
+  if (!recurso) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 w-full max-w-md shadow-lg">
-        <h3 className="text-lg font-semibold">Reservar {defaultTipo.toLowerCase()}</h3>
-
-        <div className="mt-4 space-y-3">
-          <label className="block text-sm">
-            <span className="text-gray-600 dark:text-gray-300">Modalidad</span>
-            <select value={modalidad} onChange={e=>setModalidad(e.target.value as Modalidad)}
-                    className="mt-1 w-full border rounded-xl px-3 py-2 bg-transparent">
-              <option value="POR_HORA">Por hora</option>
-              <option value="DIA_COMPLETO">Día completo</option>
-              <option value="BLOQUE">Turno</option>
-            </select>
-          </label>
-
-          <label className="block text-sm">
-            <span className="text-gray-600 dark:text-gray-300">Fecha</span>
-            <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)}
-                   className="mt-1 w-full border rounded-xl px-3 py-2 bg-transparent"/>
-          </label>
-
-          {modalidad === "POR_HORA" && (
-            <label className="block text-sm">
-              <span className="text-gray-600 dark:text-gray-300">Hora</span>
-              <input type="time" value={hora} onChange={e=>setHora(e.target.value)}
-                     className="mt-1 w-full border rounded-xl px-3 py-2 bg-transparent"/>
-            </label>
-          )}
-        </div>
-
-        <div className="mt-5 flex justify-end gap-2">
-          <button className="px-3 py-2 rounded-xl border" onClick={onClose}>Cancelar</button>
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <motion.div
+          className="bg-white dark:bg-neutral-900 rounded-2xl shadow-lg p-6 max-w-md w-full relative"
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          exit={{ scale: 0.9 }}
+        >
           <button
-            disabled={!fecha}
-            className="px-3 py-2 rounded-xl border bg-gray-900 text-white dark:bg-white dark:text-black disabled:opacity-50"
-            onClick={go}
+            onClick={onClose}
+            className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
           >
-            Buscar disponibilidad
+            ✕
           </button>
-        </div>
-      </div>
-    </div>
+
+          <h2 className="text-xl font-semibold mb-2">{recurso.nombre}</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+            {recurso.descripcion}
+          </p>
+
+          <div className="text-sm space-y-1 mb-4">
+            <div><b>Tipo:</b> {recurso.tipo}</div>
+            <div><b>Capacidad:</b> {recurso.capacidad}</div>
+            {recurso.ubicacion && <div><b>Ubicación:</b> {recurso.ubicacion}</div>}
+            {recurso.precioHoraCLP && (
+              <div>Por hora: <b>${recurso.precioHoraCLP.toLocaleString("es-CL")}</b></div>
+            )}
+            {recurso.precioDiaCLP && (
+              <div>Día completo: <b>${recurso.precioDiaCLP.toLocaleString("es-CL")}</b></div>
+            )}
+          </div>
+
+          <button
+            onClick={() => alert(`Reserva iniciada para ${recurso.nombre}`)}
+            className="w-full bg-amber-600 text-white py-2 rounded-xl hover:bg-amber-700 transition"
+          >
+            Reservar ahora
+          </button>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
