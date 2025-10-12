@@ -1,14 +1,22 @@
+// backend/src/modules/reservas/reservas.service.ts
 import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateReservaDto } from './dto/create-reserva.dto';
+import { GoogleService } from '../google/google.service'; // 👈 agregado
 
 @Injectable()
 export class ReservasService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(ReservasService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private readonly google: GoogleService, // 👈 inyectado
+  ) {}
 
   async esDisponible(recursoId: string, desde: Date, hasta: Date) {
     const overlapReserva = await this.prisma.reservaRecurso.findFirst({
@@ -51,6 +59,13 @@ export class ReservasService {
     // Usuario
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: dto.usuarioId },
+      select: {
+        id: true,
+        nombre: true,
+        apellido: true,
+        correo: true,
+        googleRefreshCipher: true, // 👈 para Calendar
+      },
     });
     if (!usuario) throw new NotFoundException('Usuario no encontrado');
 
@@ -105,16 +120,13 @@ export class ReservasService {
         if (!(desde < hasta))
           throw new BadRequestException('Rango horario inválido (desde >= hasta)');
 
-        // ❗ No permitir horas pasadas
         if (desde <= now || hasta <= now) {
           throw new BadRequestException('No se puede reservar horas en el pasado');
         }
 
-        // redondeo a hora hacia arriba
         const msRounded = this.ceilToHour(hasta.getTime() - desde.getTime());
         const horas = Math.max(1, msRounded / 3600000);
 
-        // límites del recurso
         const minH = (recurso.tiempoMinimo ?? 60) / 60;
         const maxH = (recurso.tiempoMaximo ?? 480) / 60;
         if (horas < minH || horas > maxH)
@@ -125,18 +137,15 @@ export class ReservasService {
         precioItem = precioHora * horas;
 
       } else if (modalidad === 'BLOQUE') {
-        // Igual a por-hora (viene desde UI con rango)
         desde = this.parseISOOrThrow(i.desde, 'desde');
         hasta = this.parseISOOrThrow(i.hasta, 'hasta');
         if (!(desde < hasta))
           throw new BadRequestException('Rango horario inválido (desde >= hasta)');
 
-        // ❗ No permitir horas pasadas
         if (desde <= now || hasta <= now) {
           throw new BadRequestException('No se puede reservar horas en el pasado');
         }
 
-        // Debe ser múltiplo de 60min (forzamos al alza para precio)
         const diffMs = hasta.getTime() - desde.getTime();
         const horas = Math.ceil(diffMs / 3600000);
 
@@ -157,7 +166,6 @@ export class ReservasService {
           );
         }
 
-        // ❗ No permitir días pasados (comparación por string UTC YYYY-MM-DD)
         if (f < todayStrUTC) {
           throw new BadRequestException('No se puede reservar días pasados');
         }
@@ -188,6 +196,7 @@ export class ReservasService {
     );
     const total = itemsExpanded.reduce((acc, it) => acc + it.precioItem, 0);
 
+    // 🧾 crear reserva
     const reserva = await this.prisma.reserva.create({
       data: {
         usuarioId: dto.usuarioId,
@@ -204,8 +213,38 @@ export class ReservasService {
           })),
         },
       },
-      include: { recursos: true },
+      include: {
+        recursos: { include: { recurso: true } }, // 👈 para Calendar: nombre del recurso
+      },
     });
+
+    // 📅 Calendar (opcional, no bloqueante)
+    if (dto.addToCalendar) {
+      try {
+        if (usuario.googleRefreshCipher) {
+          const gEventId = await this.google.createEventForUser(
+            usuario,
+            reserva,
+            reserva.recursos,
+          );
+          if (gEventId) {
+            await this.prisma.reserva.update({
+              where: { id: reserva.id },
+              data: { gcalEventId: gEventId },
+            });
+          }
+        } else {
+          this.logger.log(
+            `Usuario ${usuario.id} no tiene Google conectado; se omite Calendar.`,
+          );
+        }
+      } catch (e: any) {
+        this.logger.warn(
+          `No se pudo crear evento de Calendar para reserva ${reserva.id}: ${e?.message}`,
+        );
+        // No romper la reserva si falla Calendar
+      }
+    }
 
     return reserva;
   }

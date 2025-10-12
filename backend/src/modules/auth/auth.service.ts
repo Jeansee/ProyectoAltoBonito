@@ -39,6 +39,11 @@ export class AuthService {
     }
   }
 
+  /** 🔹 NUEVO: util público para emitir JWT desde otros flujos (p.ej. Google OAuth) */
+  public async issueToken(user: { id: string; correo: string; rol: string }) {
+    return this.generateToken(user);
+  }
+
   async me(userId: string) {
     const user = await this.prisma.usuario.findUnique({
       where: { id: userId },

@@ -1,17 +1,22 @@
+// backend/src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { RecursosModule } from './modules/recursos/recursos.module';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { ReservasModule } from './modules/reservas/reservas.module';
+import { GoogleModule } from './modules/google/google.module';
+import { HealthController } from './common/health.controller';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    AuthModule,    
-    RecursosModule, 
+    AuthModule,
+    RecursosModule,
     PrismaModule,
-    ReservasModule // 👈 IMPORTANTE
-  ],
+    ReservasModule,
+    GoogleModule,  ],
+  controllers: [HealthController],
+
 })
 export class AppModule {}

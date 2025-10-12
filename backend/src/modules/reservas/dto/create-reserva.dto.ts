@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
   ValidateNested,
+  IsBoolean,           
 } from 'class-validator';
 
 export class ReservaItemDto {
@@ -50,4 +51,9 @@ export class CreateReservaDto {
   @ValidateNested({ each: true })
   @Type(() => ReservaItemDto)
   items: ReservaItemDto[];
+
+  @IsOptional()
+  @Type(() => Boolean)   // permite recibir "true"/"false" como string y convertirlos
+  @IsBoolean()
+  addToCalendar?: boolean;
 }

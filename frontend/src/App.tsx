@@ -8,6 +8,7 @@ import Footer from "./components/footer";
 import RecursosPage from "./pages/recursos";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RedirectIfAuthenticated from "./components/auth/RedirectIfAuthenticated";
+import AuthCallbackPage from "./pages/loginyregistro/callback"; 
 
 export default function App() {
   return (
@@ -16,30 +17,44 @@ export default function App() {
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
-          
-          {/* Rutas públicas solo para usuarios no autenticados */}
-          <Route path="/login" element={
-            <RedirectIfAuthenticated>
-              <Login />
-            </RedirectIfAuthenticated>
-          } />
-          <Route path="/register" element={
-            <RedirectIfAuthenticated>
-              <Registro />
-            </RedirectIfAuthenticated>
-          } />
+          {/* Ruta pública para el callback de Google */}
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
+          {/* Rutas públicas solo para no autenticados */}
+          <Route
+            path="/login"
+            element={
+              <RedirectIfAuthenticated>
+                <Login />
+              </RedirectIfAuthenticated>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <RedirectIfAuthenticated>
+                <Registro />
+              </RedirectIfAuthenticated>
+            }
+          />
 
           {/* Rutas protegidas */}
-          <Route path="/recursos" element={
-            <ProtectedRoute>
-              <RecursosPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/perfil" element={
-            <ProtectedRoute>
-              <Perfil />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/recursos"
+            element={
+              <ProtectedRoute>
+                <RecursosPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/perfil"
+            element={
+              <ProtectedRoute>
+                <Perfil />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </main>
       <Footer />

@@ -60,22 +60,30 @@ enum RolUsuario {
 model Usuario {
   id            String       @id @default(uuid()) @db.Uuid
   nombre        String       @db.VarChar(100)
-  apellido      String       @default("") @db.VarChar(100) 
+  apellido      String       @default("") @db.VarChar(100)
   correo        String       @unique @db.VarChar(254)
-  telefono      String       @db.VarChar(15)      // Formato: +56912345678
-  password      String       @db.VarChar(72)      // Bcrypt hash
+  telefono      String       @db.VarChar(15)         // Formato: +56912345678
+  password      String       @db.VarChar(72)         // Bcrypt hash
   rol           RolUsuario   @default(CLIENTE)
   activo        Boolean      @default(true)
-  ultimoAcceso  DateTime?    @db.Timestamp()      // Zona horaria: UTC
-  whatsapp      String?      @db.VarChar(15)      // Para confirmaciones
+  ultimoAcceso  DateTime?    @db.Timestamp()         // Zona horaria: UTC
+  whatsapp      String?      @db.VarChar(15)         // Para confirmaciones
   createdAt     DateTime     @default(now()) @db.Timestamp()
   updatedAt     DateTime     @updatedAt @db.Timestamp()
   reservas      Reserva[]
+
+  googleSub           String?   @unique
+  googleEmail         String?   @unique
+  googleAvatarUrl     String?
+  googleRefreshCipher String?
+  googleAccessToken   String?
+  googleAccessExpAt   DateTime?
 
   @@index([correo], name: "usuario_correo_idx")
   @@index([activo], name: "usuario_activo_idx")
   @@index([telefono], name: "usuario_telefono_idx")
 }
+
 
 model Recurso {
   id               String          @id @default(uuid()) @db.Uuid

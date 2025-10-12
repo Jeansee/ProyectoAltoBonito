@@ -3,11 +3,20 @@ import { useReservaCart } from "@/context/reserva-cart";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
-export default function QuickReserveModal({ isOpen, onClose, usuarioId }: any) {
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  usuarioId: string | null;
+};
+
+export default function QuickReserveModal({ isOpen, onClose, usuarioId }: Props) {
   const { cart, total, clearCart } = useReservaCart();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // 👇 nuevo: flag para calendar
+  const [addToCalendar, setAddToCalendar] = useState<boolean>(true);
 
   const handleConfirm = async () => {
     setErrorMsg(null);
@@ -15,8 +24,14 @@ export default function QuickReserveModal({ isOpen, onClose, usuarioId }: any) {
       setErrorMsg("Debes iniciar sesión.");
       return;
     }
+    if (cart.length === 0) {
+      setErrorMsg("No hay servicios en el carrito.");
+      return;
+    }
+
     try {
       setLoading(true);
+
       const payload: CreateReservaRequest = {
         usuarioId,
         items: cart.map((c) => ({
@@ -26,11 +41,16 @@ export default function QuickReserveModal({ isOpen, onClose, usuarioId }: any) {
           hasta: c.hasta,
           fecha: c.fecha,
         })),
+        addToCalendar, // 👈 se envía al backend
       };
+
       const res = await createReserva(payload);
       console.log("✅ Reserva creada:", res);
+
       setSuccess(true);
       clearCart();
+      // Si quieres cerrar automáticamente luego de éxito:
+      // setTimeout(onClose, 1000);
     } catch (err: any) {
       console.error("❌ Error al crear reserva:", err);
       setErrorMsg(err?.response?.data?.message || "No se pudo crear la reserva.");
@@ -77,6 +97,27 @@ export default function QuickReserveModal({ isOpen, onClose, usuarioId }: any) {
                 <div className="text-right font-semibold text-lg text-amber-800">
                   Total: ${total.toLocaleString("es-CL")}
                 </div>
+
+                {/* 👇 Checkbox: agregar a Google Calendar */}
+                <label className="mt-2 flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={addToCalendar}
+                    onChange={(e) => setAddToCalendar(e.target.checked)}
+                  />
+                  Agregar a mi Google Calendar
+                </label>
+
+                {/* Sugerencia para conectar Calendar si no lo tiene aún */}
+                <p className="text-xs text-gray-500">
+                  ¿Aún no conectaste Google?{" "}
+                  <a
+                    href="/api/auth/google/start-calendar"
+                    className="text-amber-700 underline"
+                  >
+                    Conectar Calendar
+                  </a>
+                </p>
               </div>
             )}
 

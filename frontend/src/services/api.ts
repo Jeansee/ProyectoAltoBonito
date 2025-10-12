@@ -1,28 +1,30 @@
+// frontend/src/services/api.ts
 import axios from "axios";
 
-function resolveBaseURL() {
-  const envUrl = import.meta.env.VITE_API_URL;
-  let base = envUrl || "/api";
-  // Fuerza proxy en dev aunque hayan dejado localhost:3000
-  if (import.meta.env.DEV && /^https?:\/\/localhost:3000/i.test(base)) {
-    console.warn("⚠️ VITE_API_URL apunta a localhost:3000 en dev. Forzando '/api'.");
-    base = "/api";
-  }
-  return base;
-}
+const API_ORIGIN =
+  (import.meta as any).env?.VITE_API_URL ||
+  window.location.origin ||                 // fallback
+  "http://localhost:3000";
+
+// Asegura que el baseURL termine en /api
+const baseURL = `${API_ORIGIN.replace(/\/$/, "")}/api`;
 
 const api = axios.create({
-  baseURL: resolveBaseURL(),
-  withCredentials: false,
+  baseURL,
+  withCredentials: true, // ok si algún día usas cookies; con Authorization también funciona
 });
 
+// Adjunta Authorization si hay token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const t = localStorage.getItem("token");
+  if (t) {
+    config.headers = config.headers ?? {};
+    (config.headers as any).Authorization = `Bearer ${t}`;
+  }
   return config;
 });
 
-// 👀 confirma en consola que sea "/api"
-console.log("🔗 API baseURL =>", (api.defaults as any).baseURL);
+// Log útil
+console.log("🔗 API baseURL =>", api.defaults.baseURL);
 
 export default api;

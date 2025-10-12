@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { changePassword, updateProfile, fetchMe } from "@/services/auth.service";
+import GoogleCalendarConnect from "@/components/google/GoogleCalendarConnect";
 
 export default function PerfilPage() {
   const { user, updateUser } = useAuth();
@@ -76,7 +77,7 @@ export default function PerfilPage() {
       <div className="mx-auto max-w-6xl px-4 py-10">
         {/* Layout: sidebar izquierda + contenido derecha */}
         <div className="grid grid-cols-1 md:grid-cols-[280px,1fr] gap-8">
-          {/* Sidebar izquierda (responsivo en altura) */}
+          {/* Sidebar izquierda */}
           <aside className="bg-white rounded-2xl shadow p-6 flex flex-col items-center min-h-[420px] sm:min-h-[500px] md:min-h-[700px]">
             <motion.div
               whileHover={{ scale: 1.05 }}
@@ -118,8 +119,8 @@ export default function PerfilPage() {
             </nav>
           </aside>
 
-          {/* Contenedor derecho alto (con respiro arriba/abajo) */}
-          <section className="flex items-start justify-center min-h-[600px] sm:min-h-[650px] md:min-h-[720px]">
+          {/* Contenedor derecho */}
+          <section className="flex items-start justify-center min-h-[600px] sm:minh-[650px] md:min-h-[720px]">
             <AnimatePresence mode="wait">
               {tab === "perfil" && (
                 <motion.div
@@ -138,6 +139,7 @@ export default function PerfilPage() {
                       <h2 className="text-xl md:text-2xl font-semibold text-[#1e1e1e]">
                         Información del usuario
                       </h2>
+
                       <motion.button
                         whileTap={{ scale: 0.95 }}
                         onClick={() => {
@@ -220,14 +222,20 @@ export default function PerfilPage() {
                           </div>
 
                           {msg && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                              className="text-sm text-green-700 bg-green-50 border border-green-200 p-3 rounded-lg">
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="text-sm text-green-700 bg-green-50 border border-green-200 p-3 rounded-lg"
+                            >
                               {msg}
                             </motion.div>
                           )}
                           {err && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                              className="text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded-lg">
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded-lg"
+                            >
                               {err}
                             </motion.div>
                           )}
@@ -266,6 +274,11 @@ export default function PerfilPage() {
                         </motion.div>
                       )}
                     </AnimatePresence>
+
+                    {/* ⬇️ WIDGET DE GOOGLE CALENDAR */}
+                    <div className="mt-8">
+                      <GoogleCalendarConnect />
+                    </div>
                   </div>
                 </motion.div>
               )}

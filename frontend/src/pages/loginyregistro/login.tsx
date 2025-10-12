@@ -1,8 +1,19 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
-import { FaUserLock } from "react-icons/fa"; 
+import { FaUserLock, FaGoogle } from "react-icons/fa";
 import s from "@/components/home/home.module.css";
+
+// Base del backend:
+// - En dev: http://localhost:3000 (directo, sin proxy de Vite)
+// - En prod: VITE_API_URL o mismo origen
+const BACKEND_BASE: string = (import.meta as any).env?.DEV
+  ? "http://localhost:3000"
+  : (import.meta as any).env?.VITE_API_URL || window.location.origin;
+
+// helper para evitar dobles barras
+const join = (base: string, path: string) =>
+  `${base.replace(/\/+$/, "")}${path}`;
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -25,6 +36,11 @@ export default function LoginPage() {
     }
   };
 
+  // 👉 redirige al backend real para que maneje cookies PKCE y el callback
+  const loginWithGoogle = () => {
+    window.location.href = join(BACKEND_BASE, "/api/auth/google/start");
+  };
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Lado izquierdo con ilustración / branding */}
@@ -39,7 +55,7 @@ export default function LoginPage() {
         >
           <h1 className="text-3xl font-bold mb-4">Todo lo que necesitas, ¡en un solo lugar!</h1>
           <p className="text-lg text-white/80 max-w-md mx-auto">
-            Inicia sesión para continuar con tu experiencia. 
+            Inicia sesión para continuar con tu experiencia.
           </p>
         </motion.div>
       </div>
@@ -62,9 +78,7 @@ export default function LoginPage() {
                 <FaUserLock />
               </span>
             </motion.div>
-            <h2 className="mt-4 text-2xl font-bold text-[#1e1e1e]">
-              Iniciar sesión
-            </h2>
+            <h2 className="mt-4 text-2xl font-bold text-[#1e1e1e]">Iniciar sesión</h2>
             <p className="text-gray-500 text-sm">Accede con tus credenciales</p>
           </div>
 
@@ -90,9 +104,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm mb-1 text-gray-600">
-              Contraseña
-            </label>
+            <label className="block text-sm mb-1 text-gray-600">Contraseña</label>
             <input
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -114,12 +126,28 @@ export default function LoginPage() {
             {loading ? "Ingresando..." : "Ingresar"}
           </motion.button>
 
+          {/* Separador + botón Google */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400">o</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          <button
+            type="button"
+            onClick={loginWithGoogle}
+            className="w-full inline-flex items-center justify-center gap-2
+                       rounded-full border border-gray-300 bg-white
+                       px-6 py-3 text-sm font-semibold text-gray-700
+                       hover:bg-gray-50 hover:shadow transition-all"
+          >
+            <FaGoogle />
+            Continuar con Google
+          </button>
+
           <p className="text-xs text-gray-500 text-center">
             ¿No tienes cuenta?{" "}
-            <a
-              className="text-[#c14421] hover:underline font-medium"
-              href="/register"
-            >
+            <a className="text-[#c14421] hover:underline font-medium" href="/register">
               Regístrate
             </a>
           </p>

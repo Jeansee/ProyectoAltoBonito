@@ -25,7 +25,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: quincho_api
-    working_dir: /usr/src/app              # 👈 DENTRO del servicio backend
+    working_dir: /usr/src/app
     restart: unless-stopped
     env_file:
       - ./backend/.env
@@ -38,10 +38,9 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/__ping || curl -sf http://localhost:3000/__ping || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/__ping || curl -sf http://localhost:3000/api/__ping || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -62,5 +61,4 @@ services:
     ports:
       - "5173:5173"
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend

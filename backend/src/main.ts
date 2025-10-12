@@ -1,15 +1,19 @@
+// src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { PrismaService } from './common/prisma/prisma.service';
+import * as cookieParser from 'cookie-parser';        // 👈 agregado
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { 
+  const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
-    logger: ['error', 'warn', 'debug', 'log']
+    logger: ['error', 'warn', 'debug', 'log'],
   });
 
-  // Habilitar CORS
+  app.setGlobalPrefix('api');
+
+  // CORS
   app.enableCors({
     origin: ['http://localhost:5173'],
     credentials: true,
@@ -17,21 +21,23 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
+  // 👇 cookies necesarias para OAuth (state/code_verifier)
+  app.use(cookieParser());                             // 👈 agregado
+
   // Validación global
-  app.useGlobalPipes(new ValidationPipe({ 
-    whitelist: true, 
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
     forbidNonWhitelisted: true,
-    transform: true
+    transform: true,
   }));
 
-  // Obtener el servicio Prisma y conectar
+  // Prisma
   const prismaService = app.get(PrismaService);
   await prismaService.$connect();
-
-  // Healthchecks sin importar prefijo
-  const http = app.getHttpAdapter();
-  http.get('/__ping', (_req, res) => res.json({ ok: true }));
-  http.get('/api/__ping', (_req, res) => res.json({ ok: true }));
+app.use((req, _res, next) => {
+  console.log(`[REQ] ${req.method} ${req.url}`);
+  next();
+});
 
   await app.listen(3000, '0.0.0.0');
 }
