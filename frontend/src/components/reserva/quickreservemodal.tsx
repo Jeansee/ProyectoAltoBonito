@@ -41,7 +41,7 @@ export default function QuickReserveModal({ isOpen, onClose, usuarioId }: Props)
           hasta: c.hasta,
           fecha: c.fecha,
         })),
-        addToCalendar, // 👈 se envía al backend
+        addToCalendar, 
       };
 
       const res = await createReserva(payload);
