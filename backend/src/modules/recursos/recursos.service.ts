@@ -1,6 +1,6 @@
+// src/modules/recursos/recursos.service.ts
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
-import { Prisma } from '@prisma/client';
 
 type Slot = { inicio: string; fin: string; busy: boolean };
 
@@ -8,15 +8,16 @@ type Slot = { inicio: string; fin: string; busy: boolean };
 export class RecursosService {
   constructor(private prisma: PrismaService) {}
 
-  private buildOrderBy(sort?: string): Prisma.RecursoOrderByWithRelationInput[] {
+  // Evitamos tipos de Prisma que no existen en tu build y dejamos inferencia.
+  private buildOrderBy(sort?: string) {
     switch (sort) {
-      case 'nombre_asc': return [{ nombre: 'asc' }];
-      case 'nombre_desc': return [{ nombre: 'desc' }];
-      case 'precioHora_asc': return [{ precioHoraCLP: 'asc' }];
-      case 'precioHora_desc': return [{ precioHoraCLP: 'desc' }];
-      case 'precioDia_asc': return [{ precioDiaCLP: 'asc' }];
-      case 'precioDia_desc': return [{ precioDiaCLP: 'desc' }];
-      default: return [{ nombre: 'asc' }];
+      case 'nombre_asc': return [{ nombre: 'asc' }] as any;
+      case 'nombre_desc': return [{ nombre: 'desc' }] as any;
+      case 'precioHora_asc': return [{ precioHoraCLP: 'asc' }] as any;
+      case 'precioHora_desc': return [{ precioHoraCLP: 'desc' }] as any;
+      case 'precioDia_asc': return [{ precioDiaCLP: 'asc' }] as any;
+      case 'precioDia_desc': return [{ precioDiaCLP: 'desc' }] as any;
+      default: return [{ nombre: 'asc' }] as any;
     }
   }
 
@@ -30,7 +31,8 @@ export class RecursosService {
   }) {
     const { tipo, search, activo, page, limit, sort } = params;
 
-    const where: Prisma.RecursoWhereInput = {
+    // Evitamos Prisma.RecursoWhereInput (no existe en tu cliente) usando any.
+    const where: any = {
       ...(tipo ? { tipo } : {}),
       ...(typeof activo === 'boolean' ? { activo } : {}),
       ...(search ? { nombre: { contains: search, mode: 'insensitive' } } : {}),

@@ -1,6 +1,9 @@
+// src/common/guards/roles.guard.ts
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RolUsuario } from '@prisma/client';
+
+// ✅ Usa un union local, compatible con cualquier versión de Prisma
+type RolUsuario = 'ADMIN' | 'CLIENTE';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -12,11 +15,9 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (!requiredRoles) {
-      return true;
-    }
+    if (!requiredRoles) return true;
 
     const { user } = context.switchToHttp().getRequest();
-    return requiredRoles.includes(user.rol);
+    return requiredRoles.includes(user?.rol as RolUsuario);
   }
 }
