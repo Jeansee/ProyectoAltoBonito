@@ -6,8 +6,12 @@ import path from "path";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const inDocker = !!env.DOCKER || !!process.env.DOCKER;
+
+  // Si defines VITE_PROXY_TARGET en docker-compose → usa eso.
+  // Si no, si estás en Docker, cae a backend:3000. En local, localhost:3000.
   const target =
-    env.VITE_PROXY_TARGET || (inDocker ? "http://backend:3000" : "http://localhost:3000");
+    env.VITE_PROXY_TARGET ||
+    (inDocker ? "http://backend:3000" : "http://localhost:3000");
 
   return {
     plugins: [react()],
@@ -23,16 +27,15 @@ export default defineConfig(({ mode }) => {
       proxy: {
         "/api": {
           target,
-          /**
-           * IMPORTANTE:
-           * - Mantén el Host original (localhost:5173) para que el backend
-           *   pueda calcular correctamente el redirect_uri.
-           * - Enviamos x-forwarded-* para que el backend los lea.
-           */
-          changeOrigin: false,
-          headers: {
-            "x-forwarded-host": "localhost:5173",
-            "x-forwarded-proto": "http",
+          changeOrigin: false, // dejamos el Host original (localhost:5173)
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq, req) => {
+              const host = req.headers.host || "localhost:5173";
+              // Si tu frontend está detrás de HTTPS, cambia a 'https'
+              const proto = (req.headers["x-forwarded-proto"] as string) || "http";
+              proxyReq.setHeader("x-forwarded-host", host);
+              proxyReq.setHeader("x-forwarded-proto", proto);
+            });
           },
         },
       },
@@ -42,9 +45,13 @@ export default defineConfig(({ mode }) => {
         "/api": {
           target,
           changeOrigin: false,
-          headers: {
-            "x-forwarded-host": "localhost:5173",
-            "x-forwarded-proto": "http",
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq, req) => {
+              const host = req.headers.host || "localhost:5173";
+              const proto = (req.headers["x-forwarded-proto"] as string) || "http";
+              proxyReq.setHeader("x-forwarded-host", host);
+              proxyReq.setHeader("x-forwarded-proto", proto);
+            });
           },
         },
       },

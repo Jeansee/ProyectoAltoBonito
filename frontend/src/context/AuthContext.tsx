@@ -5,7 +5,7 @@ import api from "@/services/api"; // 👈 para llamar /auth/me
 type AuthCtx = {
   user: User | null;
   token: string | null;
-  login: (correo: string, password: string) => Promise<void>;
+  login: (correo: string, password: string) => Promise<User>;   // ⬅️ ahora devuelve User
   register: (p: {
     nombre: string; apellido: string; correo: string; telefono: string; password: string; whatsapp?: string;
   }) => Promise<void>;
@@ -39,7 +39,6 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         localStorage.removeItem("user");
       }
     } else if (t && !u) {
-
       setToken(t);
       fetchMe().catch(() => {
         localStorage.removeItem("token");
@@ -53,7 +52,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
   // Helper para pedir el perfil al backend
   const fetchMe = async () => {
-    const { data } = await api.get("/auth/me");  
+    const { data } = await api.get("/auth/me");
     if (data?.token && typeof data.token === "string") {
       localStorage.setItem("token", data.token);
       setToken(data.token);
@@ -73,9 +72,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     localStorage.setItem("user", JSON.stringify(u));
   };
 
-  const login = async (correo: string, password: string) => {
+  const login = async (correo: string, password: string): Promise<User> => { // ⬅️ devuelve User
     const { user, token } = await loginUser({ correo, password });
     updateUser(user, token);
+    return user; // ⬅️ importante para decidir el redirect
   };
 
   const register = async (p: {
@@ -93,11 +93,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     window.location.href = "/";
   };
 
-
   const setTokenAndRefresh = async (newToken: string) => {
     localStorage.setItem("token", newToken);
     setToken(newToken);
-    await fetchMe(); 
+    await fetchMe();
   };
 
   return (

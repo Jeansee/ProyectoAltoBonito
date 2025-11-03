@@ -1,3 +1,4 @@
+// backend/src/modules/auth/strategies/jwt.strategy.ts
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -17,12 +18,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // Tu token tiene: sub, correo, rol
+    // Tu token lleva: sub, correo, rol
     return {
       userId: payload.sub,
       correo: payload.correo,
       rol: payload.rol,
-      // puedes incluir 'sub' también por compatibilidad:
       sub: payload.sub,
     };
   }

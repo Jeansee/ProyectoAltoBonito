@@ -27,8 +27,9 @@ export default function LoginPage() {
     try {
       setLoading(true);
       setErr(null);
-      await login(correo, password);
-      window.location.href = "/";
+      const u = await login(correo, password);  // ⬅️ ahora devuelve el usuario
+      // Redirección según rol:
+      window.location.href = u.rol === "ADMIN" ? "/admin" : "/"; // ⬅️ cambio mínimo
     } catch (e: any) {
       setErr(e?.response?.data?.message || "Credenciales inválidas.");
     } finally {

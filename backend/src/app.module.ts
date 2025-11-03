@@ -7,6 +7,7 @@ import { PrismaModule } from './common/prisma/prisma.module';
 import { ReservasModule } from './modules/reservas/reservas.module';
 import { GoogleModule } from './modules/google/google.module';
 import { HealthController } from './common/health.controller';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -15,7 +16,9 @@ import { HealthController } from './common/health.controller';
     RecursosModule,
     PrismaModule,
     ReservasModule,
-    GoogleModule,  ],
+    AdminModule,
+    GoogleModule,
+    ],
   controllers: [HealthController],
 
 })
