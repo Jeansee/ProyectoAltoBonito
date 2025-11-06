@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { changePassword, updateProfile, fetchMe } from "@/services/auth.service";
 import GoogleCalendarConnect from "@/components/google/GoogleCalendarConnect";
+import { Link } from "react-router-dom";
 
 export default function PerfilPage() {
   const { user, updateUser } = useAuth();
@@ -116,6 +117,18 @@ export default function PerfilPage() {
               >
                 Cambiar contraseña
               </button>
+
+              {user?.rol === "ADMIN" && (
+                <Link
+                  to="/admin"
+                  className="w-full px-4 py-2 rounded-full text-sm font-medium transition
+                             bg-white border border-gray-200 text-[#1e1e1e] hover:bg-[#ffb26a]/20
+                             flex items-center justify-center"
+                >
+                  Panel
+                </Link>
+              )}
+
             </nav>
           </aside>
 
