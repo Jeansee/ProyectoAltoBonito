@@ -1,4 +1,3 @@
-// backend/src/modules/reservas/reservas.service.ts
 import {
   Injectable,
   BadRequestException,
@@ -7,7 +6,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateReservaDto } from './dto/create-reserva.dto';
-import { GoogleService } from '../google/google.service'; // 👈 agregado
+import { GoogleService } from '../google/google.service';
+import { EstadoPago, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ReservasService {
@@ -15,7 +15,7 @@ export class ReservasService {
 
   constructor(
     private prisma: PrismaService,
-    private readonly google: GoogleService, // 👈 inyectado
+    private readonly google: GoogleService,
   ) {}
 
   async esDisponible(recursoId: string, desde: Date, hasta: Date) {
@@ -56,7 +56,6 @@ export class ReservasService {
   }
 
   async create(dto: CreateReservaDto) {
-    // Usuario
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: dto.usuarioId },
       select: {
@@ -64,7 +63,7 @@ export class ReservasService {
         nombre: true,
         apellido: true,
         correo: true,
-        googleRefreshCipher: true, // 👈 para Calendar
+        googleRefreshCipher: true,
       },
     });
     if (!usuario) throw new NotFoundException('Usuario no encontrado');
@@ -73,7 +72,6 @@ export class ReservasService {
       throw new BadRequestException('Debe incluir al menos un recurso');
     }
 
-    // Cargar recursos una vez
     const recursosMap = new Map<
       string,
       Awaited<ReturnType<typeof this.prisma.recurso.findUnique>>
@@ -88,11 +86,9 @@ export class ReservasService {
       recursosMap.set(i.recursoId, r);
     }
 
-    // === Validaciones de tiempo (no pasado) ===
     const now = new Date();
     const todayStrUTC = now.toISOString().slice(0, 10);
 
-    // Expandir items
     const itemsExpanded: {
       recurso: NonNullable<
         Awaited<ReturnType<typeof this.prisma.recurso.findUnique>>
@@ -196,7 +192,6 @@ export class ReservasService {
     );
     const total = itemsExpanded.reduce((acc, it) => acc + it.precioItem, 0);
 
-    // 🧾 crear reserva
     const reserva = await this.prisma.reserva.create({
       data: {
         usuarioId: dto.usuarioId,
@@ -214,11 +209,10 @@ export class ReservasService {
         },
       },
       include: {
-        recursos: { include: { recurso: true } }, // 👈 para Calendar: nombre del recurso
+        recursos: { include: { recurso: true } },
       },
     });
 
-    // 📅 Calendar (opcional, no bloqueante)
     if (dto.addToCalendar) {
       try {
         if (usuario.googleRefreshCipher) {
@@ -242,7 +236,6 @@ export class ReservasService {
         this.logger.warn(
           `No se pudo crear evento de Calendar para reserva ${reserva.id}: ${e?.message}`,
         );
-        // No romper la reserva si falla Calendar
       }
     }
 
@@ -259,5 +252,69 @@ export class ReservasService {
     });
     if (!reserva) throw new NotFoundException('Reserva no encontrada');
     return reserva;
+  }
+
+  // ✅ Mis reservas (CONFIRMADAS/PAGADAS) con pago Transbank
+  async getMine(userId: string) {
+    // 1) Tipamos el include con Prisma.ReservaInclude (compatible con versiones recientes)
+    const include = Prisma.validator<Prisma.ReservaInclude>()({
+      recursos: { include: { recurso: true } },
+      pagos: {
+        where: { estado: EstadoPago.APPROVED },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      },
+    });
+    type ReservaWithRel = Prisma.ReservaGetPayload<{ include: typeof include }>;
+
+    // 2) Consulta usando exactamente ese include
+    const reservas: ReservaWithRel[] = await this.prisma.reserva.findMany({
+      where: {
+        usuarioId: userId,
+        estado: { in: ['CONFIRMADA', 'PAGADA'] },
+      },
+      orderBy: { createdAt: 'desc' },
+      include,
+    });
+
+    // 3) Mapeo a DTO para el frontend
+    return reservas.map((r) => {
+      const p = r.pagos?.[0] ?? null;
+
+      // Lectura segura por si los tipos cacheados no traen aún estos campos
+      const tbkAuthorizationCode =
+        p && (p as any).tbkAuthorizationCode ? String((p as any).tbkAuthorizationCode) : null;
+
+      const tbkBuyOrder =
+        p && (p as any).tbkBuyOrder ? String((p as any).tbkBuyOrder) : null;
+
+      return {
+        id: r.id,
+        estado: r.estado,
+        modalidad: r.modalidad,
+        inicio: r.inicio,
+        fin: r.fin,
+        montoTotalCLP: r.montoTotalCLP,
+        montoAbonoCLP: r.montoAbonoCLP,
+        recursos: r.recursos.map((rr) => ({
+          id: rr.id,
+          recursoId: rr.recursoId,
+          nombre: rr.recurso.nombre,
+          tipo: rr.recurso.tipo,
+          precioFinalCLP: rr.precioFinalCLP,
+        })),
+        ultimoPago: p
+          ? {
+              id: p.id,
+              estado: p.estado,
+              montoCLP: p.montoCLP,
+              metodoPago: p.metodoPago,
+              tbkAuthorizationCode,
+              tbkBuyOrder,
+              createdAt: p.createdAt,
+            }
+          : null,
+      };
+    });
   }
 }

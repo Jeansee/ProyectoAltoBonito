@@ -1,24 +1,23 @@
-# Etapa de desarrollo
-FROM node:18-alpine
+# backend/Dockerfile
+FROM node:20
 
 WORKDIR /usr/src/app
 
-# Archivos de configuración
+# Instala solo deps primero (usa cache de Docker)
 COPY package*.json ./
-COPY prisma ./prisma/
-COPY tsconfig*.json ./
+RUN npm ci --no-audit --no-fund
 
-# Instalación de dependencias
-RUN npm install
-
-# Generar el cliente de Prisma
-RUN npx prisma generate --schema=./prisma/schema.prisma
-
-# Copiar el código fuente
+# Copia el resto del código
 COPY . .
 
-# Exponer el puerto
-EXPOSE 3000
+# Genera Prisma client una sola vez
+RUN npx prisma generate
 
-# Comando para desarrollo
-CMD ["npm", "run", "start:dev"]
+# Si usas Nest + TS dev:
+# CMD ["npm","run","start:dev"]
+# Si quieres arranque rápido y estable en dev: usa build + node dist
+# RUN npm run build
+# CMD ["node","dist/src/main.js"]
+
+# Para dev “rápido”: deja start:dev, pero ya sin npm install
+CMD ["npm","run","start:dev"]

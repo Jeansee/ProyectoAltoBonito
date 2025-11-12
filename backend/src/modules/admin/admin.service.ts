@@ -1,5 +1,7 @@
+// backend/src/modules/admin/admin.service.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { EstadoPago } from '@prisma/client'; // 👈 importa el enum
 
 type Range = { from?: string; to?: string };
 const makeRangeFilter = (from?: string, to?: string) => {
@@ -19,7 +21,6 @@ export class AdminService {
   async metrics(range: Range) {
     const { from, to } = range;
 
-    // filtros por rango en tablas principales
     const whereReserva = makeRangeFilter(from, to);
     const wherePago = makeRangeFilter(from, to);
     const whereUsuario = makeRangeFilter(from, to);
@@ -30,7 +31,12 @@ export class AdminService {
         this.prisma.prisma.reserva.count({ where: whereReserva }),
         this.prisma.prisma.pago.aggregate({
           _sum: { montoCLP: true },
-          where: { ...wherePago, estado: 'CAPTURED' as any },
+          where: {
+            ...wherePago,
+            estado: EstadoPago.APPROVED, // ✅ en tu esquema
+            // (opcional) si además guardas mpStatus textual:
+            // mpStatus: 'approved',
+          },
         }),
         this.prisma.prisma.reserva.groupBy({
           by: ['estado'],
@@ -48,11 +54,7 @@ export class AdminService {
 
     return {
       range: { from: from ?? null, to: to ?? null },
-      kpis: {
-        usuarios,
-        reservas: totalReservas,
-        ingresosCLP,
-      },
+      kpis: { usuarios, reservas: totalReservas, ingresosCLP },
       reservasPorEstado: reservasPorEstado.map(r => ({
         estado: r.estado,
         count: r._count._all,
@@ -92,11 +94,13 @@ export class AdminService {
       fin: r.fin,
       estado: r.estado,
       modalidad: r.modalidad,
-      cliente: r.usuario ? {
-        id: r.usuario.id,
-        nombre: `${r.usuario.nombre} ${r.usuario.apellido}`.trim(),
-        correo: r.usuario.correo,
-      } : null,
+      cliente: r.usuario
+        ? {
+            id: r.usuario.id,
+            nombre: `${r.usuario.nombre} ${r.usuario.apellido}`.trim(),
+            correo: r.usuario.correo,
+          }
+        : null,
       recursos: r.recursos.map(rr => ({
         id: rr.recurso.id,
         nombre: rr.recurso.nombre,

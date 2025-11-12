@@ -13,64 +13,67 @@ datasource db {
 
 generator prisma_client {
   provider = "prisma-client-js"
-  seed = "ts-node prisma/seed.ts"
+  seed     = "ts-node prisma/seed.ts"
 }
 
 // ================ Enumeraciones ================
 enum TipoRecurso {
-  QUINCHO       // Espacio principal para eventos
-  PISCINA       // Área de piscina
-  CANCHA        // Instalaciones deportivas
+  QUINCHO // Espacio principal para eventos
+  PISCINA // Área de piscina
+  CANCHA // Instalaciones deportivas
 }
 
 enum ModalidadReserva {
-  POR_HORA      // Reserva dentro del horario de apertura
-  DIA_COMPLETO  // Reserva de 00:00 a 23:59
-  BLOQUE        // Turno predefinido (ej: noche 19:00-04:00)
+  POR_HORA // Reserva dentro del horario de apertura
+  DIA_COMPLETO // Reserva de 00:00 a 23:59
+  BLOQUE // Turno predefinido (ej: noche 19:00-04:00)
 }
 
 enum EstadoReserva {
-  PENDIENTE     // Reserva creada, pendiente de pago
-  CONFIRMADA    // Pago inicial realizado
-  PAGADA        // Pago completo realizado
-  CANCELADA     // Reserva cancelada (manual o automática)
+  PENDIENTE // Reserva creada, pendiente de pago
+  CONFIRMADA // Pago inicial realizado
+  PAGADA // Pago completo realizado
+  CANCELADA // Reserva cancelada (manual o automática)
 }
 
 enum EstadoPago {
-  INITIATED     // Transacción Webpay iniciada
-  AUTHORIZED    // Pago autorizado por el banco
-  CAPTURED      // Pago capturado exitosamente
-  FAILED        // Transacción fallida
+  INITIATED // pago iniciado en MP (preferencia creada)
+  PENDING // pendiente (in_process)
+  APPROVED // aprobado
+  REJECTED // rechazado
+  REFUNDED // reembolsado
+  CANCELED // cancelado
+  CHARGED_BACK // contracargo
 }
 
 enum MetodoPago {
-  WEBPAY        // Pago online vía Webpay (preferido)
-  TRANSFERENCIA // Transferencia bancaria (alternativo)
-  EFECTIVO      // Pago en efectivo (casos especiales)
+  TRANSBANK
 }
 
 enum RolUsuario {
-  CLIENTE       // Puede crear y gestionar reservas
-  ADMIN         // Acceso total al sistema
+  CLIENTE // Puede crear y gestionar reservas
+  ADMIN // Acceso total al sistema
 }
 
-/* ================ Modelos ================ */
+/**
+ * ================ Modelos ================
+ */
 // ================ Modelos Principales ================
 
 model Usuario {
-  id            String       @id @default(uuid()) @db.Uuid
-  nombre        String       @db.VarChar(100)
-  apellido      String       @default("") @db.VarChar(100)
-  correo        String       @unique @db.VarChar(254)
-  telefono      String       @db.VarChar(15)         // Formato: +56912345678
-  password      String       @db.VarChar(72)         // Bcrypt hash
-  rol           RolUsuario   @default(CLIENTE)
-  activo        Boolean      @default(true)
-  ultimoAcceso  DateTime?    @db.Timestamp()         // Zona horaria: UTC
-  whatsapp      String?      @db.VarChar(15)         // Para confirmaciones
-  createdAt     DateTime     @default(now()) @db.Timestamp()
-  updatedAt     DateTime     @updatedAt @db.Timestamp()
-  reservas      Reserva[]
+  id           String     @id @default(uuid()) @db.Uuid
+  nombre       String     @db.VarChar(100)
+  apellido     String     @default("") @db.VarChar(100)
+  correo       String     @unique @db.VarChar(254)
+  telefono     String     @db.VarChar(15) // Formato: +56912345678
+  password     String     @db.VarChar(72) // Bcrypt hash
+  rol          RolUsuario @default(CLIENTE)
+  activo       Boolean    @default(true)
+  ultimoAcceso DateTime?  @db.Timestamp() // Zona horaria: UTC
+  whatsapp     String?    @db.VarChar(15) // Para confirmaciones
+  createdAt    DateTime   @default(now()) @db.Timestamp()
+  updatedAt    DateTime   @updatedAt @db.Timestamp()
+  reservas     Reserva[]
 
   googleSub           String?   @unique
   googleEmail         String?   @unique
@@ -84,29 +87,28 @@ model Usuario {
   @@index([telefono], name: "usuario_telefono_idx")
 }
 
-
 model Recurso {
-  id               String          @id @default(uuid()) @db.Uuid
-  nombre           String          @db.VarChar(100)    // Ej: "Quincho Principal"
-  tipo             TipoRecurso                         // QUINCHO, PISCINA, CANCHA
-  descripcion      String?         @db.Text
-  activo           Boolean         @default(true)
-  capacidad        Int             @db.SmallInt        // Máximo de personas
-  ubicacion        String?         @db.VarChar(150)    // Dirección o referencia
-  precioHoraCLP    Int            @db.Integer         // Precio por hora en CLP
-  precioDiaCLP     Int            @db.Integer         // Precio día completo
-  precioBaseCLP    Int            @db.Integer         // Precio mínimo/base
-  tiempoMinimo     Int            @default(60) @db.SmallInt    // Minutos mínimos
-  tiempoMaximo     Int            @default(480) @db.SmallInt   // Minutos máximos
-  diasAnticipacion Int            @default(30) @db.SmallInt    // Días máximos para reservar
-  createdAt        DateTime       @default(now()) @db.Timestamp()
-  updatedAt        DateTime       @updatedAt @db.Timestamp()
-  
+  id               String      @id @default(uuid()) @db.Uuid
+  nombre           String      @db.VarChar(100) // Ej: "Quincho Principal"
+  tipo             TipoRecurso // QUINCHO, PISCINA, CANCHA
+  descripcion      String?     @db.Text
+  activo           Boolean     @default(true)
+  capacidad        Int         @db.SmallInt // Máximo de personas
+  ubicacion        String?     @db.VarChar(150) // Dirección o referencia
+  precioHoraCLP    Int         @db.Integer // Precio por hora en CLP
+  precioDiaCLP     Int         @db.Integer // Precio día completo
+  precioBaseCLP    Int         @db.Integer // Precio mínimo/base
+  tiempoMinimo     Int         @default(60) @db.SmallInt // Minutos mínimos
+  tiempoMaximo     Int         @default(480) @db.SmallInt // Minutos máximos
+  diasAnticipacion Int         @default(30) @db.SmallInt // Días máximos para reservar
+  createdAt        DateTime    @default(now()) @db.Timestamp()
+  updatedAt        DateTime    @updatedAt @db.Timestamp()
+
   // Relaciones
-  horarios         Horario[]       // Horarios de apertura por día
-  turnos           Turno[]         // Bloques predefinidos (ej: turno noche)
-  bloqueos         Bloqueo[]       // Períodos no disponibles
-  reservas         ReservaRecurso[] // Relación con reservas
+  horarios Horario[] // Horarios de apertura por día
+  turnos   Turno[] // Bloques predefinidos (ej: turno noche)
+  bloqueos Bloqueo[] // Períodos no disponibles
+  reservas ReservaRecurso[] // Relación con reservas
 
   @@unique([tipo, nombre], name: "recurso_tipo_nombre_unique")
   @@index([tipo, activo], name: "recurso_busqueda_idx")
@@ -115,15 +117,15 @@ model Recurso {
 // ================ Modelos de Configuración y Disponibilidad ================
 
 model Horario {
-  id         String   @id @default(uuid()) @db.Uuid
-  recursoId  String   @db.Uuid
-  recurso    Recurso  @relation(fields: [recursoId], references: [id], onDelete: Cascade)
-  diaSemana  Int      @db.SmallInt        // 0=Domingo, 1=Lunes, ..., 6=Sábado
-  abreMin    Int      @db.SmallInt        // Minutos desde 00:00 (ej: 480 = 08:00)
-  cierraMin  Int      @db.SmallInt        // Minutos desde 00:00 (ej: 1320 = 22:00)
-  activo     Boolean  @default(true)
-  createdAt  DateTime @default(now()) @db.Timestamp()
-  updatedAt  DateTime @updatedAt @db.Timestamp()
+  id        String   @id @default(uuid()) @db.Uuid
+  recursoId String   @db.Uuid
+  recurso   Recurso  @relation(fields: [recursoId], references: [id], onDelete: Cascade)
+  diaSemana Int      @db.SmallInt // 0=Domingo, 1=Lunes, ..., 6=Sábado
+  abreMin   Int      @db.SmallInt // Minutos desde 00:00 (ej: 480 = 08:00)
+  cierraMin Int      @db.SmallInt // Minutos desde 00:00 (ej: 1320 = 22:00)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamp()
+  updatedAt DateTime @updatedAt @db.Timestamp()
 
   @@unique([recursoId, diaSemana], name: "horario_recurso_dia_unique")
   @@index([recursoId], name: "horario_recurso_idx")
@@ -133,14 +135,14 @@ model Turno {
   id            String   @id @default(uuid()) @db.Uuid
   recursoId     String   @db.Uuid
   recurso       Recurso  @relation(fields: [recursoId], references: [id], onDelete: Cascade)
-  nombre        String   @db.VarChar(80)      // Ej: "Turno Noche"
+  nombre        String   @db.VarChar(80) // Ej: "Turno Noche"
   descripcion   String?  @db.Text
-  inicioMin     Int      @db.SmallInt         // Minutos desde 00:00 (ej: 1140 = 19:00)
-  finMin        Int      @db.SmallInt         // Minutos desde 00:00 (ej: 240 = 04:00 del día siguiente)
-  diasSemana    Int[]    @db.SmallInt         // Array de días válidos (0-6)
-  precioFijoCLP Int      @db.Integer          // Precio fijo del turno
-  capacidadMax  Int?     @db.SmallInt         // Límite de personas (opcional)
-  color         String?  @db.VarChar(7)       // Código HEX (#RRGGBB)
+  inicioMin     Int      @db.SmallInt // Minutos desde 00:00 (ej: 1140 = 19:00)
+  finMin        Int      @db.SmallInt // Minutos desde 00:00 (ej: 240 = 04:00 del día siguiente)
+  diasSemana    Int[]    @db.SmallInt // Array de días válidos (0-6)
+  precioFijoCLP Int      @db.Integer // Precio fijo del turno
+  capacidadMax  Int?     @db.SmallInt // Límite de personas (opcional)
+  color         String?  @db.VarChar(7) // Código HEX (#RRGGBB)
   activo        Boolean  @default(true)
   createdAt     DateTime @default(now()) @db.Timestamp()
   updatedAt     DateTime @updatedAt @db.Timestamp()
@@ -149,15 +151,15 @@ model Turno {
 }
 
 model Bloqueo {
-  id         String   @id @default(uuid()) @db.Uuid
-  recursoId  String   @db.Uuid
-  recurso    Recurso  @relation(fields: [recursoId], references: [id], onDelete: Cascade)
-  motivo     String   @db.VarChar(160)      // Razón del bloqueo
-  inicio     DateTime @db.Timestamp()        // Inicio del bloqueo
-  fin        DateTime @db.Timestamp()        // Fin del bloqueo
-  createdBy  String   @db.Uuid              // Usuario admin que creó el bloqueo
-  createdAt  DateTime @default(now()) @db.Timestamp()
-  updatedAt  DateTime @updatedAt @db.Timestamp()
+  id        String   @id @default(uuid()) @db.Uuid
+  recursoId String   @db.Uuid
+  recurso   Recurso  @relation(fields: [recursoId], references: [id], onDelete: Cascade)
+  motivo    String   @db.VarChar(160) // Razón del bloqueo
+  inicio    DateTime @db.Timestamp() // Inicio del bloqueo
+  fin       DateTime @db.Timestamp() // Fin del bloqueo
+  createdBy String   @db.Uuid // Usuario admin que creó el bloqueo
+  createdAt DateTime @default(now()) @db.Timestamp()
+  updatedAt DateTime @updatedAt @db.Timestamp()
 
   @@index([recursoId, inicio, fin], name: "bloqueo_periodo_idx")
 }
@@ -166,23 +168,23 @@ model Bloqueo {
 
 model Reserva {
   id            String           @id @default(uuid()) @db.Uuid
-  usuarioId     String          @db.Uuid
-  usuario       Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
-  modalidad     ModalidadReserva                    // POR_HORA, DIA_COMPLETO, BLOQUE
-  estado        EstadoReserva   @default(PENDIENTE) 
-  inicio        DateTime        @db.Timestamp()      // UTC, validar contra horarios
-  fin           DateTime        @db.Timestamp()      // UTC, validar contra horarios
-  montoTotalCLP Int            @db.Integer          // Monto total a pagar
-  montoAbonoCLP Int            @default(0) @db.Integer // Abono/señal recibido
-  descuentoCLP  Int            @default(0) @db.Integer // Descuento aplicado
-  notas         String?        @db.Text             // Notas internas/admin
-  metadata      Json?                               // Datos extra (flexible)
-  gcalEventId   String?        @db.VarChar(200)    // ID en Google Calendar
-  createdAt     DateTime       @default(now()) @db.Timestamp()
-  updatedAt     DateTime       @updatedAt @db.Timestamp()
-  
-  recursos      ReservaRecurso[] // Recursos incluidos
-  pagos         Pago[]          // Historial de pagos
+  usuarioId     String           @db.Uuid
+  usuario       Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  modalidad     ModalidadReserva // POR_HORA, DIA_COMPLETO, BLOQUE
+  estado        EstadoReserva    @default(PENDIENTE)
+  inicio        DateTime         @db.Timestamp() // UTC, validar contra horarios
+  fin           DateTime         @db.Timestamp() // UTC, validar contra horarios
+  montoTotalCLP Int              @db.Integer // Monto total a pagar
+  montoAbonoCLP Int              @default(0) @db.Integer // Abono/señal recibido
+  descuentoCLP  Int              @default(0) @db.Integer // Descuento aplicado
+  notas         String?          @db.Text // Notas internas/admin
+  metadata      Json? // Datos extra (flexible)
+  gcalEventId   String?          @db.VarChar(200) // ID en Google Calendar
+  createdAt     DateTime         @default(now()) @db.Timestamp()
+  updatedAt     DateTime         @updatedAt @db.Timestamp()
+
+  recursos ReservaRecurso[] // Recursos incluidos
+  pagos    Pago[] // Historial de pagos
 
   @@index([estado], name: "reserva_estado_idx")
   @@index([inicio, fin], name: "reserva_periodo_idx")
@@ -195,10 +197,10 @@ model ReservaRecurso {
   recursoId      String   @db.Uuid
   reserva        Reserva  @relation(fields: [reservaId], references: [id], onDelete: Cascade)
   recurso        Recurso  @relation(fields: [recursoId], references: [id], onDelete: Restrict)
-  precioBaseCLP  Int      @db.Integer          // Precio base calculado
-  precioFinalCLP Int      @db.Integer          // Precio final (con ajustes)
+  precioBaseCLP  Int      @db.Integer // Precio base calculado
+  precioFinalCLP Int      @db.Integer // Precio final (con ajustes)
   descuentoCLP   Int      @default(0) @db.Integer // Descuento específico
-  notas          String?  @db.Text             // Notas específicas
+  notas          String?  @db.Text // Notas específicas
   createdAt      DateTime @default(now()) @db.Timestamp()
 
   @@unique([reservaId, recursoId], name: "reserva_recurso_unique")
@@ -206,22 +208,29 @@ model ReservaRecurso {
 }
 
 model Pago {
-  id           String     @id @default(uuid()) @db.Uuid
-  reservaId    String     @db.Uuid
-  reserva      Reserva    @relation(fields: [reservaId], references: [id], onDelete: Cascade)
-  estado       EstadoPago                      // Estado Webpay
-  montoCLP     Int        @db.Integer         // Monto del pago
-  metodoPago   MetodoPago                     // WEBPAY/TRANSFERENCIA/EFECTIVO
-  buyOrder     String?    @db.VarChar(100)    // Orden de compra Webpay
-  sessionId    String?    @db.VarChar(100)    // ID sesión Webpay
-  token        String?    @db.VarChar(200)    // Token transacción Webpay
-  comprobante  String?    @db.VarChar(255)    // URL/ruta comprobante
-  procesadoPor String?    @db.Uuid            // Admin que procesó el pago
-  createdAt    DateTime   @default(now()) @db.Timestamp()
-  updatedAt    DateTime   @updatedAt @db.Timestamp()
+  id        String  @id @default(uuid()) @db.Uuid
+  reservaId String  @db.Uuid
+  reserva   Reserva @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+
+  estado     EstadoPago
+  montoCLP   Int        @db.Integer
+  metodoPago MetodoPago @default(TRANSBANK)
+
+  // --- Transbank ---
+  tbkToken             String? @db.VarChar(100)
+  tbkBuyOrder          String? @db.VarChar(100)
+  tbkSessionId         String? @db.VarChar(100)
+  tbkStatus            String? @db.VarChar(30)
+  tbkAuthorizationCode String? @db.VarChar(50)
+
+  comprobante  String?  @db.VarChar(255)
+  procesadoPor String?  @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamp()
+  updatedAt    DateTime @updatedAt @db.Timestamp()
 
   @@index([estado], name: "pago_estado_idx")
   @@index([reservaId], name: "pago_reserva_idx")
+  @@index([metodoPago], name: "pago_metodo_idx")
 }
 
 // generator erd {

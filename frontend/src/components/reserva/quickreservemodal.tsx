@@ -1,4 +1,7 @@
+// src/components/reservas/QuickReserveModal.tsx
 import { createReserva, type CreateReservaRequest } from "@/services/reservas.service";
+import { createTbkTransaction } from "@/services/tbk.service";
+import { redirectToWebpay } from "@/utils/redirect-to-webpay";
 import { useReservaCart } from "@/context/reserva-cart";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
@@ -12,22 +15,18 @@ type Props = {
 export default function QuickReserveModal({ isOpen, onClose, usuarioId }: Props) {
   const { cart, total, clearCart } = useReservaCart();
   const [loading, setLoading] = useState(false);
+  const [payLoading, setPayLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // 👇 nuevo: flag para calendar
+  // Agregar evento al Calendar (si el usuario conectó Google en otra parte)
   const [addToCalendar, setAddToCalendar] = useState<boolean>(true);
 
   const handleConfirm = async () => {
     setErrorMsg(null);
-    if (!usuarioId) {
-      setErrorMsg("Debes iniciar sesión.");
-      return;
-    }
-    if (cart.length === 0) {
-      setErrorMsg("No hay servicios en el carrito.");
-      return;
-    }
+
+    if (!usuarioId) return setErrorMsg("Debes iniciar sesión.");
+    if (cart.length === 0) return setErrorMsg("No hay servicios en el carrito.");
 
     try {
       setLoading(true);
@@ -41,7 +40,7 @@ export default function QuickReserveModal({ isOpen, onClose, usuarioId }: Props)
           hasta: c.hasta,
           fecha: c.fecha,
         })),
-        addToCalendar, 
+        addToCalendar,
       };
 
       const res = await createReserva(payload);
@@ -49,13 +48,54 @@ export default function QuickReserveModal({ isOpen, onClose, usuarioId }: Props)
 
       setSuccess(true);
       clearCart();
-      // Si quieres cerrar automáticamente luego de éxito:
-      // setTimeout(onClose, 1000);
+      // onClose?.(); // si quieres cerrar el modal luego de crear sin pagar
     } catch (err: any) {
       console.error("❌ Error al crear reserva:", err);
       setErrorMsg(err?.response?.data?.message || "No se pudo crear la reserva.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Webpay Plus (Transbank): crear reserva -> crear transacción -> POST token_ws en pestaña nueva
+  const handlePayWithTBK = async () => {
+    setErrorMsg(null);
+
+    if (!usuarioId) return setErrorMsg("Debes iniciar sesión.");
+    if (cart.length === 0) return setErrorMsg("No hay servicios en el carrito.");
+
+    try {
+      setPayLoading(true);
+
+      // 1) Crear la reserva
+      const reservaReq: CreateReservaRequest = {
+        usuarioId,
+        items: cart.map((c) => ({
+          recursoId: c.recursoId,
+          modalidad: c.modalidad,
+          desde: c.desde,
+          hasta: c.hasta,
+          fecha: c.fecha,
+        })),
+        addToCalendar,
+      };
+      const reserva = await createReserva(reservaReq);
+      const reservaId: string = (reserva as any)?.id || (reserva as any)?.data?.id;
+      if (!reservaId) throw new Error("No se recibió el ID de la reserva desde el backend.");
+
+      // 2) Crear transacción Webpay
+      const tx = await createTbkTransaction(reservaId); // { url, token }
+      if (!tx?.url || !tx?.token) throw new Error("No se recibió URL/TOKEN de Webpay.");
+
+      // 3) Limpiar carrito y redirigir (pestaña nueva)
+      clearCart();
+      redirectToWebpay(tx.url, tx.token);
+
+    } catch (err: any) {
+      console.error("❌ Error al pagar con Webpay:", err);
+      setErrorMsg(err?.response?.data?.message || err?.message || "No se pudo iniciar el pago.");
+    } finally {
+      setPayLoading(false);
     }
   };
 
@@ -98,7 +138,7 @@ export default function QuickReserveModal({ isOpen, onClose, usuarioId }: Props)
                   Total: ${total.toLocaleString("es-CL")}
                 </div>
 
-                {/* 👇 Checkbox: agregar a Google Calendar */}
+                {/* Checkbox: agregar a Google Calendar */}
                 <label className="mt-2 flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
@@ -108,13 +148,9 @@ export default function QuickReserveModal({ isOpen, onClose, usuarioId }: Props)
                   Agregar a mi Google Calendar
                 </label>
 
-                {/* Sugerencia para conectar Calendar si no lo tiene aún */}
                 <p className="text-xs text-gray-500">
                   ¿Aún no conectaste Google?{" "}
-                  <a
-                    href="/api/auth/google/start-calendar"
-                    className="text-amber-700 underline"
-                  >
+                  <a href="/api/auth/google/start-calendar" className="text-amber-700 underline">
                     Conectar Calendar
                   </a>
                 </p>
@@ -124,19 +160,29 @@ export default function QuickReserveModal({ isOpen, onClose, usuarioId }: Props)
             {errorMsg && <p className="text-red-600 mt-3 text-sm">{errorMsg}</p>}
             {success && <p className="text-green-600 mt-3 text-sm">✅ Reserva creada correctamente.</p>}
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
               <button
                 className="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-100"
                 onClick={onClose}
               >
                 Cancelar
               </button>
+
               <button
                 disabled={loading || cart.length === 0}
                 onClick={handleConfirm}
-                className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg shadow transition-all"
+                className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-2 rounded-lg shadow transition-all disabled:opacity-60"
               >
-                {loading ? "Procesando..." : "Confirmar"}
+                {loading ? "Procesando..." : "Confirmar sin pagar"}
+              </button>
+
+              <button
+                disabled={payLoading || cart.length === 0}
+                onClick={handlePayWithTBK}
+                className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg shadow transition-all disabled:opacity-60 flex items-center gap-2"
+                title="Paga ahora con Webpay Plus"
+              >
+                {payLoading ? "Redirigiendo..." : "Pagar con Webpay"}
               </button>
             </div>
           </div>

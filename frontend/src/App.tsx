@@ -14,22 +14,17 @@ import AdminLayout from "@/pages/admin/adminlayout";
 import DashboardPage from "@/pages/admin/dashboardpage";
 import OptionChatbot from "./components/home/chatbot";
 import chatTree from "./services/chatbot.service";
+import ResultadoPago from "@/pages/pago/ResultadoPago";
 
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Handler para eventos del chatbot
   const handleChatEvent = (event: string, payload?: any) => {
     if (event === "go_to") {
       const path = payload?.path ?? "/";
-      if (location.pathname !== path) {
-        navigate(path);
-      } else {
-        // Si quieres, aquí podrías disparar un "refetch" en /recursos
-      }
+      if (location.pathname !== path) navigate(path);
     }
-
     if (event === "scroll_to") {
       const selector = payload?.selector as string;
       const route = payload?.route ?? "/";
@@ -39,7 +34,7 @@ export default function App() {
       };
       if (location.pathname !== route) {
         navigate(route);
-        setTimeout(doScroll, 120); // tiempo para montar el DOM de destino
+        setTimeout(doScroll, 120);
       } else {
         doScroll();
       }
@@ -53,7 +48,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
 
-          {/* Públicas sólo si NO está autenticado */}
+          {/* Públicas solo si NO está autenticado */}
           <Route
             path="/login"
             element={
@@ -89,6 +84,16 @@ export default function App() {
             }
           />
 
+          {/* ✅ Ruta especial para abrir pestaña "Mis reservas" */}
+          <Route
+            path="/usuario/reservas"
+            element={
+              <ProtectedRoute>
+                <Perfil initialTab="reservas" />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Admin */}
           <Route
             path="/admin"
@@ -99,8 +104,10 @@ export default function App() {
             }
           >
             <Route index element={<DashboardPage />} />
-            {/* más subrutas admin aquí */}
           </Route>
+
+          {/* Resultado de pago Webpay */}
+          <Route path="/pago/ok" element={<ResultadoPago />} />
         </Routes>
       </main>
 
@@ -118,7 +125,7 @@ export default function App() {
         }}
         floating
         storageKey="qab-chat-v1"
-        onEvent={handleChatEvent}  // <-- clave
+        onEvent={handleChatEvent}
       />
     </>
   );

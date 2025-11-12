@@ -1,11 +1,14 @@
 {
   "dependencies": {
+    "@mercadopago/sdk-react": "^1.0.6",
     "@types/bcrypt": "^6.0.0",
     "bcrypt": "^6.0.0",
     "googleapis": "^162.0.0",
+    "mercadopago": "^2.10.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.9.5"
+    "react-router-dom": "^7.9.5",
+    "transbank-sdk": "^6.1.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.2",

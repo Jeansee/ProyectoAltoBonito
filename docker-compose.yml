@@ -1,4 +1,6 @@
-﻿services:
+﻿version: "3.9"
+
+services:
   db:
     image: postgres:16
     container_name: postgres_db
@@ -19,9 +21,7 @@
       retries: 5
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: node:20
     container_name: quincho_api
     working_dir: /usr/src/app
     restart: unless-stopped
@@ -29,34 +29,107 @@
       - ./backend/.env
     environment:
       NODE_ENV: development
-      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_change_in_production}
+      TZ: America/Santiago
+      HOST: 0.0.0.0
+      PORT: 3000
+
+      # Base URLs de tu app
+      API_BASE_URL: http://backend:3000
+      APP_BASE_URL: http://localhost:5173
+      FRONTEND_URL: http://localhost:5173
+
+      # ===== Transbank (Webpay Plus) =====
+      # TEST (integración) o LIVE (producción). En TEST no necesitas credenciales reales.
+      TBK_ENV: TEST
+      # Donde Webpay redirige al navegador del cliente tras el pago:
+      TBK_RETURN_URL: http://localhost:3000/api/tbk/return
+      # A dónde enviar al usuario al final del flujo (post-commit):
+      TBK_FINAL_URL: http://localhost:5173/pago/ok
+      # Si pasas a LIVE, agrega:
+      # TBK_COMMERCE_CODE: "TU_COMMERCE_CODE_PROD"
+      # TBK_API_KEY: "TU_API_KEY_PROD"
     volumes:
       - ./backend:/usr/src/app
-      - /usr/src/app/node_modules
+      - backend_node_modules:/usr/src/app/node_modules
     ports:
       - "3000:3000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/__ping || curl -sf http://localhost:3000/api/__ping || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"http=require('http');http.get('http://localhost:3000/api/__ping',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
+    command: >
+      sh -lc '
+        set -e;
+        mkdir -p .cache;
+
+        # 1) Instalar deps solo si cambió el lock o faltan
+        LOCK_HASH_NEW="$$( [ -f package-lock.json ] && sha256sum package-lock.json | awk '\''{print $$1}'\'' || echo none )";
+        LOCK_HASH_OLD="$$( [ -f .cache/lock.hash ] && cat .cache/lock.hash || echo none )";
+        if [ ! -d node_modules ] || [ "$$LOCK_HASH_NEW" != "$$LOCK_HASH_OLD" ]; then
+          echo "[backend] instalando deps (cambio en lock o faltan deps)";
+          npm ci --no-audit --no-fund || npm install;
+          echo "$$LOCK_HASH_NEW" > .cache/lock.hash;
+        else
+          echo "[backend] deps cacheadas; saltando instalación";
+        fi;
+
+        # 2) Generar Prisma Client
+        npx prisma generate || true;
+
+        # 3) Asegurar @nestjs/cli disponible
+        if ! npx --yes --quiet nest --version >/dev/null 2>&1; then
+          echo "[backend] instalando @nestjs/cli (devDependency)…";
+          npm i -D @nestjs/cli;
+        fi
+
+        # 4) Levantar Nest en watch
+        exec npx nest start --watch
+      '
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: node:20-alpine
     container_name: quincho_web
+    working_dir: /usr/src/app
     restart: unless-stopped
     environment:
-      VITE_PROXY_TARGET: http://backend:3000   # 👈 clave para el proxy de Vite
+      TZ: America/Santiago
+      VITE_API_URL: ${VITE_API_URL:-/api}
+      VITE_PROXY_TARGET: http://backend:3000
       CHOKIDAR_USEPOLLING: "true"
-    command: sh -lc "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"
+    command: >
+      sh -lc '
+        set -e;
+        mkdir -p .cache;
+
+        LOCK_HASH_NEW="$$( [ -f package-lock.json ] && sha256sum package-lock.json | awk '\''{print $$1}'\'' || echo none )";
+        LOCK_HASH_OLD="$$( [ -f .cache/lock.hash ] && cat .cache/lock.hash || echo none )";
+        if [ ! -d node_modules ] || [ "$$LOCK_HASH_NEW" != "$$LOCK_HASH_OLD" ]; then
+          echo "[frontend] instalando deps (cambio en lock o faltan deps)";
+          npm ci --no-audit --no-fund || npm install;
+          echo "$$LOCK_HASH_NEW" > .cache/lock.hash;
+        else
+          echo "[frontend] deps cacheadas; saltando instalación";
+        fi;
+
+        exec npm run dev -- --host 0.0.0.0 --port 5173
+      '
     volumes:
       - ./frontend:/usr/src/app
-      - /usr/src/app/node_modules
+      - frontend_node_modules:/usr/src/app/node_modules
     ports:
       - "5173:5173"
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+
+volumes:
+  backend_node_modules:
+  frontend_node_modules:

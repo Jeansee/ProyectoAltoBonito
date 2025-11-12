@@ -8,6 +8,7 @@ import { ReservasModule } from './modules/reservas/reservas.module';
 import { GoogleModule } from './modules/google/google.module';
 import { HealthController } from './common/health.controller';
 import { AdminModule } from './modules/admin/admin.module';
+import { TbkModule } from './modules/tbk/tbk.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AdminModule } from './modules/admin/admin.module';
     ReservasModule,
     AdminModule,
     GoogleModule,
+    TbkModule
     ],
   controllers: [HealthController],
 

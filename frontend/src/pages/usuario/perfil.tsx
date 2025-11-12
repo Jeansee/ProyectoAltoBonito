@@ -1,13 +1,17 @@
+// src/pages/usuario/perfil.tsx
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { changePassword, updateProfile, fetchMe } from "@/services/auth.service";
 import GoogleCalendarConnect from "@/components/google/GoogleCalendarConnect";
 import { Link } from "react-router-dom";
+import MisReservas from "@/components/reserva/misreservas";
 
-export default function PerfilPage() {
+type PerfilTab = "perfil" | "password" | "reservas";
+
+export default function Perfil({ initialTab }: { initialTab?: PerfilTab } = {}) {
   const { user, updateUser } = useAuth();
-  const [tab, setTab] = useState<"perfil" | "password">("perfil");
+  const [tab, setTab] = useState<PerfilTab>(initialTab || "perfil");
   const [editMode, setEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -108,6 +112,19 @@ export default function PerfilPage() {
                 Perfil
               </button>
 
+              {/* Solo CLIENTE ve Mis reservas */}
+              {user?.rol === "CLIENTE" && (
+                <button
+                  className={`w-full px-4 py-2 rounded-full text-sm font-medium transition
+                    ${tab === "reservas"
+                      ? "bg-[#c14421] text-white shadow"
+                      : "bg-white border border-gray-200 text-[#1e1e1e] hover:bg-[#ffb26a]/20"}`}
+                  onClick={() => setTab("reservas")}
+                >
+                  Mis reservas
+                </button>
+              )}
+
               <button
                 className={`w-full px-4 py-2 rounded-full text-sm font-medium transition
                   ${tab === "password"
@@ -118,6 +135,7 @@ export default function PerfilPage() {
                 Cambiar contraseña
               </button>
 
+              {/* Admin mantiene su panel */}
               {user?.rol === "ADMIN" && (
                 <Link
                   to="/admin"
@@ -128,7 +146,6 @@ export default function PerfilPage() {
                   Panel
                 </Link>
               )}
-
             </nav>
           </aside>
 
@@ -292,6 +309,27 @@ export default function PerfilPage() {
                     <div className="mt-8">
                       <GoogleCalendarConnect />
                     </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {tab === "reservas" && user?.rol === "CLIENTE" && (
+                <motion.div
+                  key="reservas"
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -40 }}
+                  transition={{ duration: 0.4 }}
+                  className="relative w-full max-w-3xl bg-white/90 backdrop-blur-sm rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] ring-1 ring-gray-100"
+                >
+                  <div className="absolute inset-x-0 top-0 h-1.5 rounded-t-3xl bg-gradient-to-r from-[#ffb26a] via-[#c14421] to-[#ffb26a]" />
+                  <div className="p-6 md:p-10 pt-10">
+                    <h2 className="text-xl md:text-2xl font-semibold text-[#1e1e1e] mb-4">
+                      Mis reservas
+                    </h2>
+                    <React.Suspense fallback={<div className="text-sm text-gray-600">Cargando…</div>}>
+                      <MisReservas />
+                    </React.Suspense>
                   </div>
                 </motion.div>
               )}
