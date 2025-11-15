@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useLocation, Link } from "react-router-dom";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
 function useQuery() {
   const { search } = useLocation();
@@ -24,7 +25,8 @@ function mapStatus(status?: string, resp?: string) {
     return {
       ok: false,
       title: "Pago en proceso",
-      message: "Estamos esperando la confirmación del pago. Si ya pagaste, actualiza esta página en unos segundos.",
+      message:
+        "Estamos esperando la confirmación del pago. Si ya pagaste, actualiza esta página en unos segundos.",
     };
   }
 
@@ -56,61 +58,91 @@ export default function ResultadoPago() {
   const info = mapStatus(status, resp);
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center bg-amber-50 px-4">
-      <div className="w-full max-w-xl bg-white rounded-3xl shadow-lg p-8">
-        <div className="flex items-center gap-3 mb-4">
+    <div className="min-h-[70vh] flex items-center justify-center bg-gradient-to-b from-amber-50 via-[#e5d0ac]/40 to-amber-50 px-4">
+      <div className="w-full max-w-md rounded-3xl bg-white border border-[#c14421]/30 shadow-[0_18px_45px_rgba(0,0,0,0.18)] px-7 py-7">
+        {/* Logo arriba a la izquierda */}
+        <div className="flex items-center gap-3 mb-5">
+          <div className="h-20 w-20 rounded-2xl bg-white flex items-center justify-center">
+            <img
+              src="/img/logo.webp" // ajusta esta ruta según tu proyecto
+              alt="Logo"
+              className="h-20 w-20 object-contain"
+            />
+          </div>
+        </div>
+
+        {/* Contenido */}
+        <div className="flex flex-col items-center text-center space-y-4">
+          {/* Icono de estado */}
+          <div className="flex items-center justify-center">
+            {info.ok ? (
+              <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-amber-50/80 border border-[#c14421]/30">
+                <FaCheckCircle className="text-[#c14421]" size={26} />
+              </div>
+            ) : (
+              <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-red-50 border border-red-200">
+                <FaTimesCircle className="text-red-600" size={26} />
+              </div>
+            )}
+          </div>
+
+          {/* Título y mensaje */}
+          <div className="space-y-2">
+            <h1
+              className="text-xl font-bold tracking-tight"
+              style={{ color: "#1e1e1e" }}
+            >
+              {info.title}
+            </h1>
+            <p className="text-sm text-gray-600 max-w-sm mx-auto">
+              {info.message}
+            </p>
+          </div>
+
+          {/* Tips según resultado */}
           {info.ok ? (
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-              <span className="text-green-600 text-lg">✓</span>
-            </span>
+            <div className="mt-2 rounded-2xl bg-amber-50/70 border border-[#c14421]/30 px-4 py-3 text-xs text-gray-600 text-left w-full">
+              <p className="font-semibold mb-1" style={{ color: "#1e1e1e" }}>
+                ¿Qué puedes hacer ahora?
+              </p>
+              <ul className="list-disc ml-4 space-y-1">
+                <li>Revisa el detalle de tu reserva en el apartado “Mis reservas”.</li>
+                <li>Verifica tu correo para confirmar que recibiste el comprobante.</li>
+              </ul>
+            </div>
           ) : (
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
-              <span className="text-red-600 text-lg">!</span>
-            </span>
+            <div className="mt-2 rounded-2xl bg-amber-50/70 border border-[#c14421]/30 px-4 py-3 text-xs text-gray-600 text-left w-full">
+              <p className="font-semibold mb-1" style={{ color: "#1e1e1e" }}>
+                ¿Necesitas ayuda?
+              </p>
+              <ul className="list-disc ml-4 space-y-1">
+                <li>Intenta nuevamente desde el botón “Ir al inicio”.</li>
+                <li>
+                  Si el cobro se realizó pero no ves tu reserva, contáctanos con el
+                  comprobante de pago.
+                </li>
+              </ul>
+            </div>
           )}
-          <h1 className="text-2xl font-bold text-amber-800">{info.title}</h1>
-        </div>
 
-        <p className="text-gray-700 mb-6">{info.message}</p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div className="p-3 rounded-lg bg-gray-50">
-            <div className="text-gray-500">Estado</div>
-            <div className="font-semibold">{status ?? "—"}</div>
+          {/* Botones */}
+          <div className="mt-4 flex flex-wrap justify-center gap-3 w-full">
+            <Link
+              to="/"
+              className="px-5 py-2 rounded-full border border-[#c14421]/30 text-sm font-medium hover:bg-amber-50 transition"
+              style={{ color: "#1e1e1e" }}
+            >
+              Ir al inicio
+            </Link>
+            <Link
+              to="/usuario/reservas"
+              className="px-5 py-2 rounded-full text-sm font-semibold text-white shadow-md hover:shadow-lg transition"
+              style={{ backgroundColor: "#c14421" }}
+            >
+              Ver mis reservas
+            </Link>
           </div>
-          <div className="p-3 rounded-lg bg-gray-50">
-            <div className="text-gray-500">Código respuesta</div>
-            <div className="font-semibold">{resp ?? "—"}</div>
-          </div>
         </div>
-
-        {tokenWs && (
-          <div className="mt-3 p-3 rounded-lg bg-gray-50 break-all text-xs text-gray-600">
-            <div className="text-gray-500">token_ws</div>
-            <div className="font-mono">{tokenWs}</div>
-          </div>
-        )}
-
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            to="/"
-            className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
-          >
-            Ir al inicio
-          </Link>
-          <Link
-            to="/usuario/reservas"
-            className="px-5 py-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700 shadow"
-          >
-            Ver mis reservas
-          </Link>
-        </div>
-
-        {info.ok ? (
-          <p className="mt-4 text-xs text-gray-500">
-            * Si no ves tu reserva confirmada, actualiza la página o vuelve a entrar a “Mis reservas”.
-          </p>
-        ) : null}
       </div>
     </div>
   );

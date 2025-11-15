@@ -1,4 +1,3 @@
-// backend/src/modules/admin/admin.controller.ts
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AdminOnlyGuard } from '../../common/guards/admin-only.guard';
@@ -17,7 +16,12 @@ export class AdminController {
 
   // GET /api/admin/recent-reservas?limit=10
   @Get('recent-reservas')
-  async recent(@Query('limit') limit = '10') {
+  async recent(@Query('limit') limit?: string) {
+    // sin ?limit -> devuelve todas
+    if (!limit) {
+      return this.admin.recentReservas();
+    }
+
     const n = Math.max(1, Math.min(50, parseInt(limit, 10) || 10));
     return this.admin.recentReservas(n);
   }

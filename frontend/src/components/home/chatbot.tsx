@@ -245,7 +245,7 @@ export default function OptionChatbot({
                 className="max-w-[90%] rounded-2xl px-4 py-3 text-[16px] leading-relaxed shadow transition"
                 style={{
                   backgroundColor: m.role === "bot" ? theme.bubbleBot : theme.bubbleUser,
-                  color: m.role === "bot" ? "#fff" : "#1f2937",
+                  color: m.role === "bot" ? "#fff" : "#1e1e1e",
                   border: m.role === "bot" ? `1px solid #00000020` : `1px solid ${theme.accent}`,
                 }}
               >

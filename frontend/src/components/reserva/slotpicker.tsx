@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getRecursoAvailability, getRecursoSlots } from "@/services/recursos.service";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 type Mode = "POR_HORA" | "BLOQUE" | "DIA_COMPLETO";
 
@@ -184,10 +185,10 @@ export default function SlotPicker({
   }
 
   return (
-    <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-5">
+    <div className="bg-amber-50/70 border border-[#c14421]/30 rounded-2xl p-5">
       {mode !== "DIA_COMPLETO" && (
         <>
-          <label className="block text-sm text-gray-600 mb-2">Fecha</label>
+          <label className="block text-sm text-[#1e1e1e] font-bold mb-2">Fecha</label>
           <input
             type="date"
             className="px-3 py-2 rounded-lg border w-full mb-4"
@@ -201,9 +202,27 @@ export default function SlotPicker({
       {mode === "DIA_COMPLETO" && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <button className="px-2 py-1 rounded border text-sm hover:bg-amber-100" onClick={prevMonth}>◀</button>
-            <div className="font-semibold text-amber-800">{monthKey}</div>
-            <button className="px-2 py-1 rounded border text-sm hover:bg-amber-100" onClick={nextMonth}>▶</button>
+            <button
+              type="button"
+              onClick={prevMonth}
+              className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-[#c14421]/30 text-[#c14421]"
+              aria-label="Mes anterior"
+            >
+              <FaChevronLeft size={14} />
+            </button>
+
+            <div className="font-semibold text-[#1e1e1e]">
+              {monthKey}
+            </div>
+
+            <button
+              type="button"
+              onClick={nextMonth}
+              className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-[#c14421]/30 text-[#c14421]"
+              aria-label="Mes siguiente"
+            >
+              <FaChevronRight size={14} />
+            </button>
           </div>
 
           {loadingMonth ? (
@@ -237,8 +256,8 @@ export default function SlotPicker({
                         ${disabled
                           ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
                           : selected
-                          ? "bg-amber-600 text-white border-amber-600"
-                          : "bg-white text-amber-900 border-amber-200 hover:bg-amber-100"
+                          ? "bg-[#c14421] text-white border border-[#c14421]/30"
+                          : "bg-white text-[#1e1e1e] border border-[#c14421]/30"
                         }`}
                       title={c.available ? "Disponible" : "No disponible"}
                     >
@@ -260,7 +279,14 @@ export default function SlotPicker({
             <p className="text-sm text-gray-600">Sin horarios configurados o disponibles.</p>
           ) : (
             <>
-              <div className="text-sm text-gray-600 mb-2">Horarios disponibles ({libres.length} libres)</div>
+              <div className="text-sm text-[#1e1e1e] font-bold mb-2">Horarios disponibles ({libres.length} libres)</div>
+
+              {mode === "BLOQUE" && (
+                <p className="text-xs text-[gray-500] mb-2">
+                  Elegir al menos dos o más bloques.
+                </p>
+              )}
+
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {libres.map((s, idx) => {
                   const active =
@@ -273,8 +299,8 @@ export default function SlotPicker({
                       onClick={() => clickSlot(idx)}
                       className={`text-sm px-3 py-2 rounded-lg border transition ${
                         active
-                          ? "bg-amber-600 text-white border-amber-600"
-                          : "bg-white hover:bg-amber-100 border-amber-200 text-amber-900"
+                          ? "bg-[#c14421] text-white border-amber-600"
+                          : "bg-white hover:bg-gray-50 border border-[#c14421]/30 text-[#1e1e1e]"
                       }`}
                       title={`${fmt24(s.inicio)} – ${fmt24(s.fin)}`}
                     >

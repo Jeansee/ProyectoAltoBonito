@@ -1,16 +1,31 @@
-// backend/src/modules/admin/admin.service.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
-import { EstadoPago } from '@prisma/client'; // 👈 importa el enum
+import { EstadoReserva } from '@prisma/client';
 
 type Range = { from?: string; to?: string };
-const makeRangeFilter = (from?: string, to?: string) => {
+
+// WHERE para reservas: inicio >= from 00:00 AND inicio < (to+1) 00:00
+const buildReservaDateWhere = (from?: string, to?: string) => {
   const where: any = {};
+
   if (from || to) {
-    where.createdAt = {};
-    if (from) where.createdAt.gte = new Date(`${from}T00:00:00.000Z`);
-    if (to) where.createdAt.lte = new Date(`${to}T23:59:59.999Z`);
+    const cond: any = {};
+
+    if (from) {
+      const start = new Date(from + 'T00:00:00'); // sin Z para no liar el huso
+      cond.gte = start;
+    }
+
+    if (to) {
+      const end = new Date(to + 'T00:00:00');
+      end.setDate(end.getDate() + 1); // día siguiente
+      cond.lt = end;
+    }
+
+    // seguimos filtrando por fecha de INICIO del evento
+    where.inicio = cond;
   }
+
   return where;
 };
 
@@ -20,56 +35,266 @@ export class AdminService {
 
   async metrics(range: Range) {
     const { from, to } = range;
+    const whereReserva = buildReservaDateWhere(from, to);
 
-    const whereReserva = makeRangeFilter(from, to);
-    const wherePago = makeRangeFilter(from, to);
-    const whereUsuario = makeRangeFilter(from, to);
-
-    const [usuarios, totalReservas, pagosAgg, reservasPorEstado, reservasPorModalidad] =
-      await Promise.all([
-        this.prisma.prisma.usuario.count({ where: whereUsuario }),
-        this.prisma.prisma.reserva.count({ where: whereReserva }),
-        this.prisma.prisma.pago.aggregate({
-          _sum: { montoCLP: true },
-          where: {
-            ...wherePago,
-            estado: EstadoPago.APPROVED, // ✅ en tu esquema
-            // (opcional) si además guardas mpStatus textual:
-            // mpStatus: 'approved',
+    const [reservas, usuarios] = await Promise.all([
+      // 👉 Reservas del período según INICIO
+      this.prisma.prisma.reserva.findMany({
+        where: Object.keys(whereReserva).length ? whereReserva : undefined,
+        select: {
+          estado: true,
+          modalidad: true,
+          inicio: true,
+          usuarioId: true, // 👈 necesario para clientes nuevos vs recurrentes
+          recursos: {
+            select: {
+              recursoId: true,
+              precioFinalCLP: true,
+              recurso: {
+                select: {
+                  nombre: true,
+                  tipo: true,
+                },
+              },
+            },
           },
-        }),
-        this.prisma.prisma.reserva.groupBy({
-          by: ['estado'],
-          _count: { _all: true },
-          where: whereReserva,
-        }),
-        this.prisma.prisma.reserva.groupBy({
-          by: ['modalidad'],
-          _count: { _all: true },
-          where: whereReserva,
-        }),
-      ]);
+        },
+      }),
+      // 👉 Usuarios totales SIEMPRE (no dependen del filtro)
+      this.prisma.prisma.usuario.count(),
+    ]);
 
-    const ingresosCLP = pagosAgg._sum.montoCLP ?? 0;
+    // ====== KPIs ======
+    const totalReservas = reservas.length;
+
+    // Ingresos globales: suma SOLO de CONFIRMADA/PAGADA
+    let ingresosCLP = 0;
+    for (const r of reservas) {
+      if (
+        r.estado === EstadoReserva.CONFIRMADA ||
+        r.estado === EstadoReserva.PAGADA
+      ) {
+        for (const rr of r.recursos) {
+          ingresosCLP += rr.precioFinalCLP ?? 0;
+        }
+      }
+    }
+
+    // ====== Reservas por modalidad ======
+    const reservasPorModalidadMap = new Map<string, number>();
+    for (const r of reservas) {
+      reservasPorModalidadMap.set(
+        r.modalidad,
+        (reservasPorModalidadMap.get(r.modalidad) ?? 0) + 1,
+      );
+    }
+    const reservasPorModalidad = Array.from(
+      reservasPorModalidadMap.entries(),
+    ).map(([modalidad, count]) => ({ modalidad, count }));
+
+    // ====== Ocupancia e ingresos por recurso / mes ======
+    const recursoMesMap = new Map<
+      string,
+      {
+        recursoId: string;
+        recursoNombre: string;
+        recursoTipo: string;
+        month: string; // "YYYY-MM"
+        reservas: number;
+        ingresosCLP: number;
+      }
+    >();
+
+    // ====== Reservas por día de la semana y por franja horaria ======
+    const reservasPorDiaSemanaMap = new Map<number, number>(); // 0=Dom ... 6=Sáb
+
+    const FRANJAS = [
+      { id: '06-12', label: '06:00–12:00', from: 6, to: 12 },
+      { id: '12-18', label: '12:00–18:00', from: 12, to: 18 },
+      { id: '18-24', label: '18:00–00:00', from: 18, to: 24 },
+    ];
+    const reservasPorFranjaMap = new Map<string, number>(); // key = franja.id
+
+    // Mapa para reservas por usuario en el PERÍODO (solo CONFIRMADA/PAGADA)
+    const reservasPorUsuarioPeriodo = new Map<string, number>();
+
+    // 🔴 Insights de uso real: SOLO reservas CONFIRMADA / PAGADA
+    for (const r of reservas) {
+      if (
+        r.estado !== EstadoReserva.CONFIRMADA &&
+        r.estado !== EstadoReserva.PAGADA
+      ) {
+        continue;
+      }
+
+      const inicio = r.inicio;
+      if (!inicio) continue;
+
+      // --- Contabilizar reservas por usuario en EL PERÍODO ---
+      if (r.usuarioId) {
+        reservasPorUsuarioPeriodo.set(
+          r.usuarioId,
+          (reservasPorUsuarioPeriodo.get(r.usuarioId) ?? 0) + 1,
+        );
+      }
+
+      // --- Mes para recursoMes ---
+      const year = inicio.getUTCFullYear();
+      const monthNum = inicio.getUTCMonth() + 1;
+      const month = `${year}-${String(monthNum).padStart(2, '0')}`; // ej: "2026-01"
+
+      for (const rr of r.recursos) {
+        const key = `${rr.recursoId}|${month}`;
+        const monto = rr.precioFinalCLP ?? 0;
+
+        const current = recursoMesMap.get(key);
+        if (current) {
+          current.reservas += 1;
+          current.ingresosCLP += monto;
+        } else {
+          recursoMesMap.set(key, {
+            recursoId: rr.recursoId,
+            recursoNombre: rr.recurso.nombre,
+            recursoTipo: rr.recurso.tipo,
+            month,
+            reservas: 1,
+            ingresosCLP: monto,
+          });
+        }
+      }
+
+      // --- Día de la semana (0=Dom ... 6=Sáb) ---
+      const dow = inicio.getUTCDay();
+      reservasPorDiaSemanaMap.set(
+        dow,
+        (reservasPorDiaSemanaMap.get(dow) ?? 0) + 1,
+      );
+
+      // --- Franja horaria ---
+      const hour = inicio.getUTCHours();
+      const franja =
+        FRANJAS.find((f) => hour >= f.from && hour < f.to) ?? FRANJAS[0];
+
+      reservasPorFranjaMap.set(
+        franja.id,
+        (reservasPorFranjaMap.get(franja.id) ?? 0) + 1,
+      );
+    }
+
+    const recursoMes = Array.from(recursoMesMap.values());
+
+    const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const reservasPorDiaSemana = Array.from(
+      reservasPorDiaSemanaMap.entries(),
+    )
+      .sort(([a, b]) => a - b)
+      .map(([dia, count]) => ({
+        dia,
+        label: dayNames[dia] ?? String(dia),
+        count,
+      }));
+
+    const reservasPorFranja = FRANJAS.map((f) => ({
+      id: f.id,
+      label: f.label,
+      count: reservasPorFranjaMap.get(f.id) ?? 0,
+    }));
+
+    // ====== Clientes nuevos vs recurrentes (histórico) ======
+
+    let clientesNuevos = 0;
+    let clientesRecurrentes = 0;
+    let reservasClientesNuevos = 0;
+    let reservasClientesRecurrentes = 0;
+
+    if (reservasPorUsuarioPeriodo.size > 0) {
+      const usuarioIds = Array.from(reservasPorUsuarioPeriodo.keys());
+
+      // Traemos, para esos usuarios, su PRIMERA reserva confirmada/pagada
+      // y el total de reservas confirmadas/pagadas en la historia.
+      const resumenUsuarios = await this.prisma.prisma.reserva.groupBy({
+        by: ['usuarioId'],
+        where: {
+          usuarioId: { in: usuarioIds },
+          estado: {
+            in: [EstadoReserva.CONFIRMADA, EstadoReserva.PAGADA],
+          },
+        },
+        _min: { inicio: true },
+        _count: { _all: true },
+      });
+
+      const infoMap = new Map<
+        string,
+        { primerInicio: Date; totalGlobal: number }
+      >();
+
+      for (const row of resumenUsuarios) {
+        if (!row._min.inicio) continue;
+        infoMap.set(row.usuarioId, {
+          primerInicio: row._min.inicio,
+          totalGlobal: row._count._all,
+        });
+      }
+
+      const tieneFrom = !!from;
+      const fromDate = from ? new Date(from + 'T00:00:00') : null;
+
+      for (const usuarioId of usuarioIds) {
+        const info = infoMap.get(usuarioId);
+        const reservasEnPeriodo = reservasPorUsuarioPeriodo.get(usuarioId) ?? 0;
+        if (!info) continue;
+
+        const { primerInicio, totalGlobal } = info;
+
+        let esNuevo = false;
+
+        if (tieneFrom && fromDate) {
+          // 🔹 Si hay filtro "from": nuevo = primera reserva >= inicio del rango
+          esNuevo = primerInicio >= fromDate;
+        } else {
+          // 🔹 Sin filtro: nuevo = solo 1 reserva confirmada/pagada en toda la historia
+          esNuevo = totalGlobal === 1;
+        }
+
+        if (esNuevo) {
+          clientesNuevos += 1;
+          reservasClientesNuevos += reservasEnPeriodo;
+        } else {
+          clientesRecurrentes += 1;
+          reservasClientesRecurrentes += reservasEnPeriodo;
+        }
+      }
+    }
 
     return {
       range: { from: from ?? null, to: to ?? null },
-      kpis: { usuarios, reservas: totalReservas, ingresosCLP },
-      reservasPorEstado: reservasPorEstado.map(r => ({
-        estado: r.estado,
-        count: r._count._all,
-      })),
-      reservasPorModalidad: reservasPorModalidad.map(r => ({
-        modalidad: r.modalidad,
-        count: r._count._all,
-      })),
+      kpis: {
+        usuarios, // total del sistema
+        reservas: totalReservas, // todas las reservas del rango
+        ingresosCLP, // ingresos solo confirmadas/pagadas
+      },
+      // 👇 ya no devolvemos reservasPorEstado
+      reservasPorModalidad,
+      recursoMes,
+      reservasPorDiaSemana,
+      reservasPorFranja,
+      clientesNuevosVsRecurrentes: {
+        nuevos: {
+          clientes: clientesNuevos,
+          reservas: reservasClientesNuevos,
+        },
+        recurrentes: {
+          clientes: clientesRecurrentes,
+          reservas: reservasClientesRecurrentes,
+        },
+      },
     };
   }
 
-  async recentReservas(limit = 10) {
-    const rows = await this.prisma.prisma.reserva.findMany({
+  async recentReservas(limit?: number) {
+    const findArgs: any = {
       orderBy: { createdAt: 'desc' },
-      take: limit,
       select: {
         id: true,
         createdAt: true,
@@ -77,7 +302,9 @@ export class AdminService {
         fin: true,
         estado: true,
         modalidad: true,
-        usuario: { select: { id: true, nombre: true, apellido: true, correo: true } },
+        usuario: {
+          select: { id: true, nombre: true, apellido: true, correo: true },
+        },
         recursos: {
           select: {
             recurso: { select: { id: true, nombre: true, tipo: true } },
@@ -85,9 +312,17 @@ export class AdminService {
           },
         },
       },
-    });
+    };
 
-    return rows.map(r => ({
+    if (typeof limit === 'number') {
+      findArgs.take = limit;
+    }
+
+    const rows = (await this.prisma.prisma.reserva.findMany(
+      findArgs,
+    )) as any[];
+
+    return rows.map((r) => ({
       id: r.id,
       fecha: r.createdAt,
       inicio: r.inicio,
@@ -101,13 +336,16 @@ export class AdminService {
             correo: r.usuario.correo,
           }
         : null,
-      recursos: r.recursos.map(rr => ({
+      recursos: r.recursos.map((rr: any) => ({
         id: rr.recurso.id,
         nombre: rr.recurso.nombre,
         tipo: rr.recurso.tipo,
         precioFinalCLP: rr.precioFinalCLP,
       })),
-      totalCLP: r.recursos.reduce((acc, rr) => acc + (rr.precioFinalCLP ?? 0), 0),
+      totalCLP: r.recursos.reduce(
+        (acc: number, rr: any) => acc + (rr.precioFinalCLP ?? 0),
+        0,
+      ),
     }));
   }
 }
