@@ -104,7 +104,7 @@ export default function QuickReserveModal({ isOpen, onClose, usuarioId }: Props)
                   {cart.map((item) => (
                     <div
                       key={item.recursoId}
-                      className="rounded-2xl border border-[#c14421]/30 bg-amber-50/70 px-4 py-3"
+                      className="rounded-2xl border border-[#c14421]/30 bg-[#ffb26a]/25 px-4 py-3"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <h3 className="font-semibold text-sm text-[#1e1e1e]">
@@ -136,7 +136,7 @@ export default function QuickReserveModal({ isOpen, onClose, usuarioId }: Props)
                 </div>
 
                 {/* Checkbox: agregar a Google Calendar */}
-                <div className="mt-2 rounded-2xl border border-[#c14421]/30 bg-amber-50/50 px-3 py-3">
+                <div className="mt-2 rounded-2xl border border-[#c14421]/30 bg-[#ffb26a]/25 px-3 py-3">
                   <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
                     <span
                       className={`relative inline-flex h-4 w-8 items-center rounded-full border transition ${

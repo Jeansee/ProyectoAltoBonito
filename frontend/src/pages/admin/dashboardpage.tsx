@@ -11,8 +11,7 @@ import {
 } from "react-icons/fi";
 
 const ACCENT = "#c14421";
-const ARENA = "#e5d0ac";
-// 👇 AHORA 5 EN VEZ DE 10
+const ARENA = "#fad4b6ff";
 const PAGE_SIZE = 5;
 
 /* ------------------------------- UI helpers ------------------------------- */
@@ -37,7 +36,7 @@ function KPI({
 }) {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow">
-      <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[#e5d0ac]/30" />
+      <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[#ffb26a]/25" />
       <div className="flex items-start gap-4">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#ffb26a] to-[#c14421] text-white shadow">
           {icon}
@@ -254,7 +253,7 @@ export default function DashboardPage() {
       <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow">
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e5d0ac]/40 text-[#c14421]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ffb26a]/25 text-[#c14421]">
               <FiFilter />
             </div>
             <div>
@@ -389,7 +388,7 @@ export default function DashboardPage() {
                   label={x.modalidad}
                   value={x.count}
                   total={totalModalidad}
-                  color={ARENA}
+                  color={ACCENT}
                 />
               ))
             ) : (
@@ -404,7 +403,7 @@ export default function DashboardPage() {
         {/* Ocupancia */}
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow">
           <div className="mb-3 text-base font-semibold text-gray-900">
-            Top recursos por reservas (mes)
+            Ocupancia mes por recurso
           </div>
           {topByReservas.length === 0 ? (
             <div className="text-sm text-gray-400">Sin datos</div>
@@ -444,7 +443,7 @@ export default function DashboardPage() {
         {/* Ingresos */}
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow">
           <div className="mb-3 text-base font-semibold text-gray-900">
-            Top recursos por ingresos (mes)
+            Ingresos mes por recurso
           </div>
           {topByIngresos.length === 0 ? (
             <div className="text-sm text-gray-400">Sin datos</div>
@@ -587,7 +586,7 @@ export default function DashboardPage() {
                             r.estado === "PAGADA"
                               ? "ok"
                               : r.estado === "CONFIRMADA"
-                              ? "warn"
+                              ? "ok"
                               : r.estado === "PENDIENTE"
                               ? "muted"
                               : "danger"

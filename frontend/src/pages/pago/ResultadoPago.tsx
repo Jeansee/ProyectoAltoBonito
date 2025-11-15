@@ -58,7 +58,7 @@ export default function ResultadoPago() {
   const info = mapStatus(status, resp);
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center bg-gradient-to-b from-amber-50 via-[#e5d0ac]/40 to-amber-50 px-4">
+    <div className="min-h-[70vh] flex items-center justify-center bg-gradient-to-br from-[#fff6ec] via-white to-[#ffe9d3] px-4">
       <div className="w-full max-w-md rounded-3xl bg-white border border-[#c14421]/30 shadow-[0_18px_45px_rgba(0,0,0,0.18)] px-7 py-7">
         {/* Logo arriba a la izquierda */}
         <div className="flex items-center gap-3 mb-5">
@@ -76,7 +76,7 @@ export default function ResultadoPago() {
           {/* Icono de estado */}
           <div className="flex items-center justify-center">
             {info.ok ? (
-              <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-amber-50/80 border border-[#c14421]/30">
+              <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#ffb26a]/25 border border-[#c14421]/30">
                 <FaCheckCircle className="text-[#c14421]" size={26} />
               </div>
             ) : (
@@ -101,7 +101,7 @@ export default function ResultadoPago() {
 
           {/* Tips según resultado */}
           {info.ok ? (
-            <div className="mt-2 rounded-2xl bg-amber-50/70 border border-[#c14421]/30 px-4 py-3 text-xs text-gray-600 text-left w-full">
+            <div className="mt-2 rounded-2xl bg-[#ffb26a]/25 border border-[#c14421]/30 px-4 py-3 text-xs text-gray-600 text-left w-full">
               <p className="font-semibold mb-1" style={{ color: "#1e1e1e" }}>
                 ¿Qué puedes hacer ahora?
               </p>
@@ -111,7 +111,7 @@ export default function ResultadoPago() {
               </ul>
             </div>
           ) : (
-            <div className="mt-2 rounded-2xl bg-amber-50/70 border border-[#c14421]/30 px-4 py-3 text-xs text-gray-600 text-left w-full">
+            <div className="mt-2 rounded-2xl bg-[#ffb26a]/25 border border-[#c14421]/30 px-4 py-3 text-xs text-gray-600 text-left w-full">
               <p className="font-semibold mb-1" style={{ color: "#1e1e1e" }}>
                 ¿Necesitas ayuda?
               </p>
@@ -129,7 +129,7 @@ export default function ResultadoPago() {
           <div className="mt-4 flex flex-wrap justify-center gap-3 w-full">
             <Link
               to="/"
-              className="px-5 py-2 rounded-full border border-[#c14421]/30 text-sm font-medium hover:bg-amber-50 transition"
+              className="px-5 py-2 rounded-full border border-[#c14421]/30 text-sm font-medium hover:bg-[#ffb26a]/25 transition"
               style={{ color: "#1e1e1e" }}
             >
               Ir al inicio

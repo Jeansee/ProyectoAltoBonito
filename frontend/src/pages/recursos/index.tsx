@@ -90,7 +90,7 @@ export default function RecursoDetailPage() {
   // ---- render guards
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-amber-50 to-amber-100 text-[#c14421]">
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-[#fff6ec] via-white to-[#ffe9d3] text-[#c14421]">
         <div className="animate-pulse text-lg">Cargando recurso...</div>
       </div>
     );
@@ -98,7 +98,7 @@ export default function RecursoDetailPage() {
 
   if (fetchError) {
     return (
-      <div className="flex flex-col gap-4 justify-center items-center min-h-screen bg-amber-50 text-gray-700">
+      <div className="flex flex-col gap-4 justify-center items-center min-h-screen bg-gradient-to-br from-[#fff6ec] via-white to-[#ffe9d3] text-gray-700">
         <p>{fetchError}</p>
         <small className="text-gray-500">
           Revisa ?tipo=QUINCHO|PISCINA|CANCHA
@@ -109,7 +109,7 @@ export default function RecursoDetailPage() {
 
   if (!recurso) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-amber-50 text-gray-600">
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-[#fff6ec] via-white to-[#ffe9d3] text-gray-600">
         No se encontró información del recurso.
       </div>
     );
@@ -182,7 +182,7 @@ export default function RecursoDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-amber-100/60 to-amber-50 text-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-[#fff6ec] via-white to-[#ffe9d3] text-gray-800">
       {/* 🧡 APARTADO SUPERIOR: SIN CAMBIOS */}
       <div className="relative w-full h-[440px] overflow-hidden rounded-b-[3rem] shadow-lg">
         <motion.img
@@ -242,7 +242,7 @@ export default function RecursoDetailPage() {
               </p>
 
               <div className="mt-5 grid gap-3 text-xs text-gray-700 sm:grid-cols-2">
-                <div className="rounded-xl bg-amber-50/70 px-3 py-2 border border-[#c14421]/30">
+                <div className="rounded-xl bg-[#ffb26a]/25 px-3 py-2 border border-[#c14421]/30">
                   <div
                     className="text-[11px] uppercase tracking-wide"
                     style={{ color: "#c14421" }}
@@ -251,7 +251,7 @@ export default function RecursoDetailPage() {
                   </div>
                   <div className="font-semibold text-[#1e1e1e] text-sm">{r.tipo}</div>
                 </div>
-                <div className="rounded-xl bg-amber-50/70 px-3 py-2 border border-[#c14421]/30">
+                <div className="rounded-xl bg-[#ffb26a]/25 px-3 py-2 border border-[#c14421]/30">
                   <div
                     className="text-[11px] uppercase tracking-wide"
                     style={{ color: "#c14421" }}
@@ -265,7 +265,7 @@ export default function RecursoDetailPage() {
               </div>
 
               {/* Equipamiento más llamativo con react-icons ✅ */}
-              <div className="mt-6 rounded-2xl bg-amber-50/70 px-4 py-4 border border-[#c14421]/30">
+              <div className="mt-6 rounded-2xl bg-[#ffb26a]/25 px-4 py-4 border border-[#c14421]/30">
                 <div
                   className="text-[11px] uppercase tracking-wide mb-2 py-2"
                   style={{ color: "#c14421" }}
@@ -323,7 +323,7 @@ export default function RecursoDetailPage() {
                       className={`px-4 py-1.5 rounded-full border text-xs font-medium transition ${
                         mode === m
                           ? "text-white shadow-sm"
-                          : "bg-white text-[#1e1e1e] border border-[#c14421]/30 hover:bg-amber-50"
+                          : "bg-white text-[#1e1e1e] border border-[#c14421]/30 hover:bg-[#ffb26a]/25"
                       }`}
                       style={
                         mode === m
@@ -343,7 +343,7 @@ export default function RecursoDetailPage() {
               </div>
 
               <motion.div
-                className="rounded-2xl bg-amber-50/70 p-3"
+                className="rounded-2xl bg-[#ffb26a]/25 p-3"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25, duration: 0.4 }}
@@ -357,7 +357,7 @@ export default function RecursoDetailPage() {
                 />
               </motion.div>
 
-              <div className="mt-4 flex items-center justify-between rounded-2xl bg-amber-50 px-4 py-3 border border-[#c14421]/30">
+              <div className="mt-4 flex items-center justify-between rounded-2xl bg-[#ffb26a]/25 px-4 py-3 border border-[#c14421]/30">
                 <div className="text-[11px] uppercase tracking-wide font-semibold text-[#c14421]">
                   Total
                 </div>

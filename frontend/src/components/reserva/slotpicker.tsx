@@ -185,7 +185,7 @@ export default function SlotPicker({
   }
 
   return (
-    <div className="bg-amber-50/70 border border-[#c14421]/30 rounded-2xl p-5">
+    <div className="bg-[#ffb26a]/25/70 border border-[#c14421]/30 rounded-2xl p-5">
       {mode !== "DIA_COMPLETO" && (
         <>
           <label className="block text-sm text-[#1e1e1e] font-bold mb-2">Fecha</label>

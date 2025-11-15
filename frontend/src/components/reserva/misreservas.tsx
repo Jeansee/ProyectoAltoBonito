@@ -101,7 +101,7 @@ export default function MisReservas() {
       {data.map((r) => (
         <div
           key={r.id}
-          className="rounded-2xl bg-amber-50/90 border border-[#c14421]/30"
+          className="rounded-2xl bg-[#ffb26a]/25 border border-[#c14421]/30"
         >
           <div className="p-4 md:p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             {/* Izquierda: estado, fecha, recursos */}
