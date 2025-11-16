@@ -1,6 +1,10 @@
 // frontend/src/pages/admin/dashboardpage.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { fetchAdminMetrics, fetchRecentReservas } from "@/services/admin.api";
+import {
+  fetchAdminMetrics,
+  fetchRecentReservas,
+  cancelReservaAdmin,
+} from "@/services/admin.api";
 import type { AdminMetrics, RecentReserva } from "@/services/admin.api";
 import {
   FiUsers,
@@ -126,9 +130,16 @@ export default function DashboardPage() {
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
 
+  // 👇 nuevos filtros
+  const [tipoRecurso, setTipoRecurso] = useState<string>("");
+  const [modalidad, setModalidad] = useState<string>("");
+
   const [loadingKPI, setLoadingKPI] = useState(true);
   const [loadingTable, setLoadingTable] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // 👇 nuevo: para saber qué reserva se está cancelando
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   // paginación últimas reservas
   const [page, setPage] = useState<number>(1);
@@ -147,8 +158,7 @@ export default function DashboardPage() {
   const topByReservas = useMemo(() => {
     const list = [...recursoMes];
     list.sort(
-      (a, b) =>
-        b.reservas - a.reservas || b.month.localeCompare(a.month)
+      (a, b) => b.reservas - a.reservas || b.month.localeCompare(a.month)
     );
     return list.slice(0, 5);
   }, [recursoMes]);
@@ -156,8 +166,7 @@ export default function DashboardPage() {
   const topByIngresos = useMemo(() => {
     const list = [...recursoMes];
     list.sort(
-      (a, b) =>
-        b.ingresosCLP - a.ingresosCLP || b.month.localeCompare(a.month)
+      (a, b) => b.ingresosCLP - a.ingresosCLP || b.month.localeCompare(a.month)
     );
     return list.slice(0, 5);
   }, [recursoMes]);
@@ -201,15 +210,21 @@ export default function DashboardPage() {
     try {
       let fromParam: string | undefined;
       let toParam: string | undefined;
+      let tipoRecursoParam: string | undefined;
+      let modalidadParam: string | undefined;
 
       if (!opts?.ignoreFilters) {
         fromParam = from || undefined;
         toParam = to || undefined;
+        tipoRecursoParam = tipoRecurso || undefined;
+        modalidadParam = modalidad || undefined;
       }
 
       const m = await fetchAdminMetrics({
         from: fromParam,
         to: toParam,
+        tipoRecurso: tipoRecursoParam as any,
+        modalidad: modalidadParam as any,
       });
       setMetrics(m);
 
@@ -244,7 +259,29 @@ export default function DashboardPage() {
   const handleRefresh = () => {
     setFrom("");
     setTo("");
+    setTipoRecurso(""); // reset recurso
+    setModalidad(""); // reset modalidad
     load({ ignoreFilters: true });
+  };
+
+  // 👇 nuevo: cancelar reserva
+  const handleCancel = async (id: string) => {
+    const ok = window.confirm(
+      "¿Seguro que deseas cancelar esta reserva? Esta acción liberará el horario."
+    );
+    if (!ok) return;
+
+    try {
+      setCancellingId(id);
+      await cancelReservaAdmin(id);
+      // recargamos respetando los filtros actuales
+      await load({ ignoreFilters: false });
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo cancelar la reserva. Inténtalo nuevamente.");
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   return (
@@ -282,6 +319,36 @@ export default function DashboardPage() {
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
               />
+            </div>
+
+            {/* Nuevo: filtro por tipo de recurso */}
+            <div>
+              <label className="block text-xs text-gray-500">Recurso</label>
+              <select
+                className="rounded-lg border px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#c14421]"
+                value={tipoRecurso}
+                onChange={(e) => setTipoRecurso(e.target.value)}
+              >
+                <option value="">Todos</option>
+                <option value="QUINCHO">Quincho</option>
+                <option value="PISCINA">Piscina</option>
+                <option value="CANCHA">Cancha</option>
+              </select>
+            </div>
+
+            {/* Nuevo: filtro por modalidad */}
+            <div>
+              <label className="block text-xs text-gray-500">Modalidad</label>
+              <select
+                className="rounded-lg border px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#c14421]"
+                value={modalidad}
+                onChange={(e) => setModalidad(e.target.value)}
+              >
+                <option value="">Todas</option>
+                <option value="POR_HORA">Por hora</option>
+                <option value="BLOQUE">Bloque</option>
+                <option value="DIA_COMPLETO">Día completo</option>
+              </select>
             </div>
 
             <button
@@ -426,9 +493,7 @@ export default function DashboardPage() {
                       <td className="py-1.5 pr-4">
                         {formatMonthLabel(row.month)}
                       </td>
-                      <td className="py-1.5 pr-4">
-                        {row.recursoNombre} ({row.recursoTipo})
-                      </td>
+                      <td className="py-1.5 pr-4">{row.recursoTipo}</td>
                       <td className="py-1.5 pr-4 text-right font-semibold">
                         {row.reservas}
                       </td>
@@ -466,9 +531,7 @@ export default function DashboardPage() {
                       <td className="py-1.5 pr-4">
                         {formatMonthLabel(row.month)}
                       </td>
-                      <td className="py-1.5 pr-4">
-                        {row.recursoNombre} ({row.recursoTipo})
-                      </td>
+                      <td className="py-1.5 pr-4">{row.recursoTipo}</td>
                       <td className="py-1.5 pr-4 text-right font-semibold">
                         {row.ingresosCLP.toLocaleString("es-CL")}
                       </td>
@@ -560,6 +623,8 @@ export default function DashboardPage() {
                     <th className="py-2 pr-4">Estado</th>
                     <th className="py-2 pr-4">Recursos</th>
                     <th className="py-2 pr-4 text-right">Total (CLP)</th>
+                    {/* nuevo encabezado de columna */}
+                    <th className="py-2 pr-4 text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -600,6 +665,22 @@ export default function DashboardPage() {
                       </td>
                       <td className="py-2 pr-4 text-right">
                         {r.totalCLP.toLocaleString("es-CL")}
+                      </td>
+                      {/* nuevo botón Cancelar */}
+                      <td className="py-2 pr-4 text-right">
+                        {r.estado === "CONFIRMADA" || r.estado === "PAGADA" ? (
+                          <button
+                            onClick={() => handleCancel(r.id)}
+                            disabled={cancellingId === r.id}
+                            className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            {cancellingId === r.id
+                              ? "Cancelando..."
+                              : "Cancelar"}
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}

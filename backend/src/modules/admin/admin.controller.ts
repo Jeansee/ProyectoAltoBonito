@@ -1,4 +1,5 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+// src/modules/admin/admin.controller.ts
+import { Controller, Get, Query, UseGuards, Patch, Param } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AdminOnlyGuard } from '../../common/guards/admin-only.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -8,10 +9,20 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 export class AdminController {
   constructor(private readonly admin: AdminService) {}
 
-  // GET /api/admin/metrics?from=YYYY-MM-DD&to=YYYY-MM-DD
+  // GET /api/admin/metrics?from=YYYY-MM-DD&to=YYYY-MM-DD&tipoRecurso=QUINCHO&modalidad=BLOQUE
   @Get('metrics')
-  async getMetrics(@Query('from') from?: string, @Query('to') to?: string) {
-    return this.admin.metrics({ from, to });
+  async getMetrics(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('tipoRecurso') tipoRecurso?: 'QUINCHO' | 'PISCINA' | 'CANCHA',
+    @Query('modalidad') modalidad?: 'POR_HORA' | 'BLOQUE' | 'DIA_COMPLETO',
+  ) {
+    return this.admin.metrics({
+      from,
+      to,
+      tipoRecurso,
+      modalidad,
+    });
   }
 
   // GET /api/admin/recent-reservas?limit=10
@@ -24,5 +35,11 @@ export class AdminController {
 
     const n = Math.max(1, Math.min(50, parseInt(limit, 10) || 10));
     return this.admin.recentReservas(n);
+  }
+
+  // PATCH /api/admin/reservas/:id/cancel
+  @Patch('reservas/:id/cancel')
+  async cancelReserva(@Param('id') id: string) {
+    return this.admin.cancelReservaByAdmin(id);
   }
 }

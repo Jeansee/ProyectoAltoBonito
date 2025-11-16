@@ -111,8 +111,12 @@ export default function QuickReserveModal({ isOpen, onClose, usuarioId }: Props)
                           {item.nombre}
                         </h3>
                         <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/80 border border-[#c14421]/30 text-[#c14421] font-medium">
-                          {item.modalidad === "DIA_COMPLETO" ? "Día completo" : "Por horario"}
-                        </span>
+                          {item.modalidad === "POR_HORA"
+                            ? "Por hora"
+                            : item.modalidad === "BLOQUE"
+                            ? "Por bloque"
+                            : "Día completo"}
+                        </span> 
                       </div>
                       <p className="mt-1 text-xs text-gray-600">
                         {item.modalidad === "DIA_COMPLETO" ? (

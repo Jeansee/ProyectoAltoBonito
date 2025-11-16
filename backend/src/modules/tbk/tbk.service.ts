@@ -196,12 +196,20 @@ export class TbkService {
       },
     };
 
+    // 🔥 Aquí decidimos el estado de la reserva según el resultado del pago
+    const reservaUpdateData: Prisma.ReservaUpdateInput = {
+      metadata: newMeta,
+    } as any;
+
+    if (String(estado) === 'APPROVED') {
+      (reservaUpdateData as any).estado = 'CONFIRMADA';
+    } else if (String(estado) === 'REJECTED') {
+      (reservaUpdateData as any).estado = 'CANCELADA';
+    }
+
     const reserva = await this.prisma.reserva.update({
       where: { id: reservaId },
-      data: {
-        ...(String(estado) === 'APPROVED' ? { estado: 'CONFIRMADA' as const } : {}),
-        metadata: newMeta,
-      },
+      data: reservaUpdateData,
       include: {
         usuario: true,
         recursos: { include: { recurso: true } },

@@ -29,6 +29,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState<Form>(INITIAL);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null); // ✅ nuevo
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -38,11 +39,13 @@ export default function RegisterPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
 
     if (!form.nombre.trim()) return setError("Ingresa tu nombre.");
     if (!form.apellido.trim()) return setError("Ingresa tu apellido.");
     if (!isValidEmail(form.correo)) return setError("Correo inválido.");
-    if (!isValidPhoneCL(form.telefono)) return setError("Teléfono chileno en formato +569XXXXXXXX.");
+    if (!isValidPhoneCL(form.telefono))
+      return setError("Teléfono chileno en formato +569XXXXXXXX.");
     if (!isStrongPassword(form.password))
       return setError("La contraseña debe tener 8+ caracteres, mayúscula, minúscula y número.");
     if (form.password !== form.confirm) return setError("Las contraseñas no coinciden.");
@@ -57,12 +60,22 @@ export default function RegisterPage() {
         telefono: form.telefono.trim(),
         password: form.password,
       });
-      window.location.href = "/login";
+
+      // ✅ limpiar formulario y mostrar mensaje
+      setForm(INITIAL);
+      setSuccess("La cuenta fue creada con éxito. Serás redirigido al inicio de sesión.");
+
+      // ✅ redirigir después de 3 segundos
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 3000);
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 409) return setError("El correo ya está registrado.");
       if (status === 400) return setError(err?.response?.data?.message ?? "Datos inválidos.");
-      return setError(err?.response?.data?.message || "No se pudo registrar. Intenta nuevamente.");
+      return setError(
+        err?.response?.data?.message || "No se pudo registrar. Intenta nuevamente."
+      );
     } finally {
       setLoading(false);
     }
@@ -71,7 +84,9 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Lado izquierdo con gradiente (mismo estilo que Login) */}
-      <div className={`${s.bgFire} hidden md:flex md:w-1/2 items-center justify-center p-10 text-white relative overflow-hidden`}>
+      <div
+        className={`${s.bgFire} hidden md:flex md:w-1/2 items-center justify-center p-10 text-white relative overflow-hidden`}
+      >
         <motion.div
           initial={{ scale: 0.92, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -115,6 +130,12 @@ export default function RegisterPage() {
             </div>
           )}
 
+          {success && (
+            <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg p-3">
+              {success}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
@@ -137,7 +158,9 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Correo electrónico
+            </label>
             <input
               name="correo"
               type="email"

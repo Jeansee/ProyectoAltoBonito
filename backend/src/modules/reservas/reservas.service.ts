@@ -1,3 +1,4 @@
+// src/modules/reservas/reservas.service.ts
 import {
   Injectable,
   BadRequestException,
@@ -19,6 +20,10 @@ export class ReservasService {
   ) {}
 
   async esDisponible(recursoId: string, desde: Date, hasta: Date) {
+    // ⏱ solo consideramos PENDIENTE si fue creada hace menos de 5 minutos
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 5 * 60 * 1000);
+
     const overlapReserva = await this.prisma.reservaRecurso.findFirst({
       where: {
         recursoId,
@@ -26,6 +31,10 @@ export class ReservasService {
           estado: { in: ['PENDIENTE', 'CONFIRMADA', 'PAGADA'] },
           inicio: { lt: hasta },
           fin: { gt: desde },
+          OR: [
+            { estado: { not: 'PENDIENTE' } },
+            { estado: 'PENDIENTE', createdAt: { gt: cutoff } },
+          ],
         },
       },
     });
@@ -192,10 +201,14 @@ export class ReservasService {
     );
     const total = itemsExpanded.reduce((acc, it) => acc + it.precioItem, 0);
 
+    // 🔥 Modalidad de la reserva basada en dto.modalidad o en el primer item
+    const modalidadReserva =
+      dto.modalidad ?? (dto.items.length ? dto.items[0].modalidad : 'POR_HORA');
+
     const reserva = await this.prisma.reserva.create({
       data: {
         usuarioId: dto.usuarioId,
-        modalidad: dto.modalidad ?? 'POR_HORA',
+        modalidad: modalidadReserva,
         inicio: inicioReserva,
         fin: finReserva,
         montoTotalCLP: total,
@@ -256,7 +269,6 @@ export class ReservasService {
 
   // ✅ Mis reservas (CONFIRMADAS/PAGADAS) con pago Transbank
   async getMine(userId: string) {
-    // 1) Tipamos el include con Prisma.ReservaInclude (compatible con versiones recientes)
     const include = Prisma.validator<Prisma.ReservaInclude>()({
       recursos: { include: { recurso: true } },
       pagos: {
@@ -267,7 +279,6 @@ export class ReservasService {
     });
     type ReservaWithRel = Prisma.ReservaGetPayload<{ include: typeof include }>;
 
-    // 2) Consulta usando exactamente ese include
     const reservas: ReservaWithRel[] = await this.prisma.reserva.findMany({
       where: {
         usuarioId: userId,
@@ -277,11 +288,9 @@ export class ReservasService {
       include,
     });
 
-    // 3) Mapeo a DTO para el frontend
     return reservas.map((r) => {
       const p = r.pagos?.[0] ?? null;
 
-      // Lectura segura por si los tipos cacheados no traen aún estos campos
       const tbkAuthorizationCode =
         p && (p as any).tbkAuthorizationCode ? String((p as any).tbkAuthorizationCode) : null;
 

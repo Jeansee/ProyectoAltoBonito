@@ -8,7 +8,6 @@ type Slot = { inicio: string; fin: string; busy: boolean };
 export class RecursosService {
   constructor(private prisma: PrismaService) {}
 
-  // Evitamos tipos de Prisma que no existen en tu build y dejamos inferencia.
   private buildOrderBy(sort?: string) {
     switch (sort) {
       case 'nombre_asc': return [{ nombre: 'asc' }] as any;
@@ -31,7 +30,6 @@ export class RecursosService {
   }) {
     const { tipo, search, activo, page, limit, sort } = params;
 
-    // Evitamos Prisma.RecursoWhereInput (no existe en tu cliente) usando any.
     const where: any = {
       ...(tipo ? { tipo } : {}),
       ...(typeof activo === 'boolean' ? { activo } : {}),
@@ -103,6 +101,10 @@ export class RecursosService {
       end.setUTCDate(end.getUTCDate() + 1); // cierra al día siguiente
     }
 
+    // ⏱ límite para PENDIENTE: 5 minutos
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 5 * 60 * 1000);
+
     // Reservas y bloqueos que se cruzan
     const reservas = await this.prisma.reservaRecurso.findMany({
       where: {
@@ -111,6 +113,10 @@ export class RecursosService {
           estado: { in: ['PENDIENTE', 'CONFIRMADA', 'PAGADA'] },
           inicio: { lt: end },
           fin: { gt: start },
+          OR: [
+            { estado: { not: 'PENDIENTE' } },
+            { estado: 'PENDIENTE', createdAt: { gt: cutoff } },
+          ],
         },
       },
       select: { reserva: { select: { inicio: true, fin: true } } },
@@ -129,7 +135,6 @@ export class RecursosService {
       ...bloqueos.map((b) => ({ inicio: b.inicio, fin: b.fin })),
     ];
 
-    const now = new Date();
     const isToday = fechaYYYYMMDD === todayStrUTC;
 
     const slots: Slot[] = [];
@@ -195,6 +200,10 @@ export class RecursosService {
     const horariosMap = new Map<number, { abreMin: number; cierraMin: number }>();
     for (const h of horarios) horariosMap.set(h.diaSemana, { abreMin: h.abreMin, cierraMin: h.cierraMin });
 
+    // ⏱ límite para PENDIENTE: 5 minutos
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 5 * 60 * 1000);
+
     // reservas y bloqueos en el rango
     const reservas = await this.prisma.reservaRecurso.findMany({
       where: {
@@ -203,6 +212,10 @@ export class RecursosService {
           estado: { in: ['PENDIENTE', 'CONFIRMADA', 'PAGADA'] },
           inicio: { lt: rangeEnd },
           fin: { gt: rangeStart },
+          OR: [
+            { estado: { not: 'PENDIENTE' } },
+            { estado: 'PENDIENTE', createdAt: { gt: cutoff } },
+          ],
         },
       },
       select: { reserva: { select: { inicio: true, fin: true } } },
@@ -242,10 +255,6 @@ export class RecursosService {
       const wd = d.getUTCDay(); // 0=domingo
       const h = horariosMap.get(wd);
 
-      // Disponible si:
-      // - no es pasado
-      // - tiene horario ese día
-      // - y no hay ocupación marcada (reservas/bloqueos) ese día
       const available = !isPast && !!h && !busyDays.has(dateStr);
 
       days.push({ date: dateStr, available });

@@ -35,7 +35,12 @@ export type AdminMetrics = {
   };
 };
 
-export async function fetchAdminMetrics(params?: { from?: string; to?: string }) {
+export async function fetchAdminMetrics(params?: {
+  from?: string;
+  to?: string;
+  tipoRecurso?: string;
+  modalidad?: string;
+}) {
   const { data } = await api.get<AdminMetrics>("/admin/metrics", { params });
   return data;
 }
@@ -48,7 +53,12 @@ export type RecentReserva = {
   estado: string;
   modalidad: string;
   cliente: { id: string; nombre: string; correo: string } | null;
-  recursos: { id: string; nombre: string; tipo: string; precioFinalCLP: number }[];
+  recursos: {
+    id: string;
+    nombre: string;
+    tipo: string;
+    precioFinalCLP: number;
+  }[];
   totalCLP: number;
 };
 
@@ -60,5 +70,11 @@ export async function fetchRecentReservas(limit = 50) {
   const { data } = await api.get<RecentReserva[]>("/admin/recent-reservas", {
     params: { limit },
   });
+  return data;
+}
+
+// 👇 NUEVO: cancelar reserva como admin
+export async function cancelReservaAdmin(id: string) {
+  const { data } = await api.patch(`/admin/reservas/${id}/cancel`);
   return data;
 }
