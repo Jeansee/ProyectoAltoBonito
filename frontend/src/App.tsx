@@ -16,6 +16,10 @@ import OptionChatbot from "./components/home/chatbot";
 import chatTree from "./services/chatbot.service";
 import ResultadoPago from "@/pages/pago/ResultadoPago";
 
+// 👇 IMPORTANTE: tu página de callback Google
+import AuthCallbackPage from "@/pages/loginyregistro/callback";
+
+
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,7 +50,11 @@ export default function App() {
       <Navbar />
       <main>
         <Routes>
+          {/* Página principal */}
           <Route path="/" element={<Home />} />
+
+          {/* 👇 RUTA DE CALLBACK DE GOOGLE (IMPORTANTE) */}
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
           {/* Públicas solo si NO está autenticado */}
           <Route
@@ -66,7 +74,7 @@ export default function App() {
             }
           />
 
-          {/* Protegidas */}
+          {/* Rutas protegidas */}
           <Route
             path="/recursos"
             element={
@@ -84,7 +92,7 @@ export default function App() {
             }
           />
 
-          {/* ✅ Ruta especial para abrir pestaña "Mis reservas" */}
+          {/* Mis reservas */}
           <Route
             path="/usuario/reservas"
             element={
@@ -106,7 +114,7 @@ export default function App() {
             <Route index element={<DashboardPage />} />
           </Route>
 
-          {/* Resultado de pago Webpay */}
+          {/* Pago Webpay */}
           <Route path="/pago/ok" element={<ResultadoPago />} />
         </Routes>
       </main>

@@ -249,71 +249,46 @@ export class AdminService {
 
     // ====== Clientes nuevos vs recurrentes (histórico) ======
 
+
     let clientesNuevos = 0;
     let clientesRecurrentes = 0;
     let reservasClientesNuevos = 0;
     let reservasClientesRecurrentes = 0;
 
+    // Usuarios que realmente hicieron reservas en este período (CONFIRMADA/PAGADA)
     if (reservasPorUsuarioPeriodo.size > 0) {
       const usuarioIds = Array.from(reservasPorUsuarioPeriodo.keys());
 
-      // Traemos, para esos usuarios, su PRIMERA reserva confirmada/pagada
-      // y el total de reservas confirmadas/pagadas en la historia.
-      const resumenUsuarios = await this.prisma.prisma.reserva.groupBy({
+      // Obtenemos el total histórico de reservas confirmadas/pagadas por usuario
+      const resumenHistorico = await this.prisma.prisma.reserva.groupBy({
         by: ['usuarioId'],
         where: {
           usuarioId: { in: usuarioIds },
-          estado: {
-            in: [EstadoReserva.CONFIRMADA, EstadoReserva.PAGADA],
-          },
+          estado: { in: [EstadoReserva.CONFIRMADA, EstadoReserva.PAGADA] },
         },
-        _min: { inicio: true },
         _count: { _all: true },
       });
 
-      const infoMap = new Map<
-        string,
-        { primerInicio: Date; totalGlobal: number }
-      >();
-
-      for (const row of resumenUsuarios) {
-        if (!row._min.inicio) continue;
-        infoMap.set(row.usuarioId, {
-          primerInicio: row._min.inicio,
-          totalGlobal: row._count._all,
-        });
+      const historicoMap = new Map<string, number>();
+      for (const row of resumenHistorico) {
+        historicoMap.set(row.usuarioId, row._count._all);
       }
 
-      const tieneFrom = !!from;
-      const fromDate = from ? new Date(from + 'T00:00:00') : null;
-
       for (const usuarioId of usuarioIds) {
-        const info = infoMap.get(usuarioId);
+        const totalGlobal = historicoMap.get(usuarioId) ?? 0;
         const reservasEnPeriodo = reservasPorUsuarioPeriodo.get(usuarioId) ?? 0;
-        if (!info) continue;
 
-        const { primerInicio, totalGlobal } = info;
-
-        let esNuevo = false;
-
-        if (tieneFrom && fromDate) {
-          // 🔹 Si hay filtro "from": nuevo = primera reserva >= inicio del rango
-          esNuevo = primerInicio >= fromDate;
-        } else {
-          // 🔹 Sin filtro: nuevo = solo 1 reserva confirmada/pagada en toda la historia
-          esNuevo = totalGlobal === 1;
-        }
-
-        if (esNuevo) {
+        if (totalGlobal <= 1) {
+          // 👉 Cliente NUEVO: SOLO 1 reserva en su vida
           clientesNuevos += 1;
           reservasClientesNuevos += reservasEnPeriodo;
         } else {
+          // 👉 Cliente RECURRENTE: más de 1 reserva
           clientesRecurrentes += 1;
           reservasClientesRecurrentes += reservasEnPeriodo;
         }
       }
     }
-
     return {
       range: { from: from ?? null, to: to ?? null },
       kpis: {

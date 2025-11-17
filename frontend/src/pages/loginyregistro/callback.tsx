@@ -1,9 +1,9 @@
-
+// frontend/src/pages/loginyregistro/callback.tsx
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 export default function AuthCallbackPage() {
-  const { setTokenAndRefresh } = useAuth(); // ⬅️ lo añadiremos en el paso 2
+  const { setTokenAndRefresh } = useAuth();
   const [msg, setMsg] = useState("Procesando inicio de sesión...");
 
   useEffect(() => {
@@ -11,17 +11,24 @@ export default function AuthCallbackPage() {
       const url = new URL(window.location.href);
       const token = url.searchParams.get("token");
       const connected = url.searchParams.get("googleConnected");
+
       if (!token) {
         setMsg("No se encontró token en la URL.");
         return;
       }
-      // Guarda y refresca sesión
-      setTokenAndRefresh(token).then(() => {
-        setMsg(connected ? "Cuenta de Google conectada. Redirigiendo..." : "Inicio de sesión exitoso. Redirigiendo...");
-        window.location.replace("/"); // a tu home (o /perfil)
-      }).catch(() => {
-        setMsg("No se pudo establecer la sesión.");
-      });
+
+      setTokenAndRefresh(token)
+        .then(() => {
+          setMsg(
+            connected
+              ? "Cuenta de Google conectada. Redirigiendo..."
+              : "Inicio de sesión exitoso. Redirigiendo..."
+          );
+          window.location.replace("/");
+        })
+        .catch(() => {
+          setMsg("No se pudo establecer la sesión.");
+        });
     } catch {
       setMsg("Error procesando el callback.");
     }

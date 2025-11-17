@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { registerUser } from "@/services/auth.service";
 import { isValidEmail, isValidPhoneCL, isStrongPassword } from "@/utils/validators";
 import { motion } from "framer-motion";
-import { FaUserPlus } from "react-icons/fa";
+import { FaUserPlus, FaGoogle } from "react-icons/fa";
 import s from "@/components/home/home.module.css";
 
 type Form = {
@@ -25,11 +25,22 @@ const INITIAL: Form = {
   acepto: false,
 };
 
+// Base del backend (igual que en Login)
+// - En dev: http://localhost:3000
+// - En prod: VITE_API_URL o mismo origen
+const BACKEND_BASE: string = (import.meta as any).env?.DEV
+  ? "http://localhost:3000"
+  : (import.meta as any).env?.VITE_API_URL || window.location.origin;
+
+// helper para evitar dobles barras
+const join = (base: string, path: string) =>
+  `${base.replace(/\/+$/, "")}${path}`;
+
 export default function RegisterPage() {
   const [form, setForm] = useState<Form>(INITIAL);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null); // ✅ nuevo
+  const [success, setSuccess] = useState<string | null>(null);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -61,11 +72,9 @@ export default function RegisterPage() {
         password: form.password,
       });
 
-      // ✅ limpiar formulario y mostrar mensaje
       setForm(INITIAL);
       setSuccess("La cuenta fue creada con éxito. Serás redirigido al inicio de sesión.");
 
-      // ✅ redirigir después de 3 segundos
       setTimeout(() => {
         window.location.href = "/login";
       }, 3000);
@@ -79,6 +88,11 @@ export default function RegisterPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 👉 reutilizamos el mismo flujo de Google que en Login
+  const loginWithGoogle = () => {
+    window.location.href = join(BACKEND_BASE, "/api/auth/google/start");
   };
 
   return (
@@ -215,7 +229,7 @@ export default function RegisterPage() {
             Acepto términos y condiciones
           </label>
 
-          {/* Botón con el mismo estilo que en Login */}
+          {/* Botón de Crear cuenta */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -228,6 +242,25 @@ export default function RegisterPage() {
           >
             {loading ? "Creando cuenta..." : "Crear cuenta"}
           </motion.button>
+
+          {/* Separador + botón Google (igual que en Login) */}
+          <div className="flex items-center gap-3 mt-4">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400">o</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          <button
+            type="button"
+            onClick={loginWithGoogle}
+            className="w-full inline-flex items-center justify-center gap-2
+                       rounded-full border border-gray-300 bg-white
+                       px-6 py-3 text-sm font-semibold text-gray-700
+                       hover:bg-gray-50 hover:shadow transition-all"
+          >
+            <FaGoogle />
+            Continuar con Google
+          </button>
 
           <p className="text-sm text-center text-gray-600">
             ¿Ya tienes cuenta?{" "}
