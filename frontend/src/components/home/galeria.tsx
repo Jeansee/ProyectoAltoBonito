@@ -5,16 +5,16 @@ import { FaChevronLeft, FaChevronRight, FaTimes } from "react-icons/fa";
 type GItem = { src: string; title: string };
 
 const IMAGES: GItem[] = [
-  { src: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800", title: "" },
-  { src: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800", title: "" },
-  { src: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800", title: "" },
-  { src: "https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=800", title: "" },
-  { src: "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800", title: "" },
-  { src: "https://images.unsplash.com/photo-1483721310020-03333e577078?w=800", title: "" },
-  { src: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800", title: "" },
-  { src: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800", title: "" },
-  { src: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=800", title: "" },
-  { src: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800", title: "" },
+  { src: "/img/foto8.webp", title: "" },
+  { src: "/img/foto18.webp", title: "" },
+  { src: "/img/foto3.webp", title: "" },
+  { src: "/img/foto15.webp", title: "" },
+  { src: "/img/foto9.webp", title: "" },
+  { src: "/img/foto2.webp", title: "" },
+  { src: "/img/piscina.webp", title: "" },
+  { src: "/img/foto1.webp", title: "" },
+  { src: "/img/foto14.webp", title: "" },
+  { src: "/img/foto6.webp", title: "" },
 ];
 
 export default function Galeria() {

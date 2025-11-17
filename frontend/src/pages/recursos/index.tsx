@@ -121,10 +121,10 @@ export default function RecursoDetailPage() {
   // imagen por tipo
   const imageSrc =
     r.tipo === "QUINCHO"
-      ? "/images/quincho.jpg"
+      ? "/img/quincho.webp"
       : r.tipo === "PISCINA"
-      ? "/images/piscina.jpg"
-      : "/images/cancha.jpg";
+      ? "/img/foto19.webp"
+      : "/img/cancha.webp";
 
   // Equipamiento según tipo, en varias líneas
   const equipamientoItems: string[] =

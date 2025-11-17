@@ -64,7 +64,7 @@ export default function AboutSection() {
                   className="group/image relative aspect-square overflow-hidden rounded-xl shadow-md bg-gray-200"
                 >
                   <img
-                    src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=900&auto=format&fit=crop"
+                    src="/img/foto13.webp"
                     alt="Área social del quincho"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover/image:scale-105"
                     loading="lazy"
@@ -81,7 +81,7 @@ export default function AboutSection() {
                   className="group/image relative aspect-square overflow-hidden rounded-xl shadow-md bg-gray-200"
                 >
                   <img
-                    src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=900&auto=format&fit=crop"
+                    src="/img/foto17.webp"
                     alt="Cocina y equipamiento"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover/image:scale-105"
                     loading="lazy"

@@ -6,33 +6,33 @@ type Slide = { image: string; title: string; description: string };
 
 const INITIAL: Slide[] = [
   {
-    image: "https://i.ibb.co/qCkd9jS/img1.jpg",
-    title: "Switzerland",
+    image: "/img/foto2.webp",
+    title: "foto1",
     description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, eum!",
   },
   {
-    image: "https://i.ibb.co/jrRb11q/img2.jpg",
-    title: "Finland",
+    image: "/img/foto8.webp",
+    title: "foto2",
     description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, eum!",
   },
   {
-    image: "https://i.ibb.co/NSwVv8D/img3.jpg",
-    title: "Iceland",
+    image: "/img/quincho.webp",
+    title: "foto3",
     description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, eum!",
   },
   {
-    image: "https://i.ibb.co/Bq4Q0M8/img4.jpg",
-    title: "Australia",
+    image: "/img/foto1.webp",
+    title: "foto4",
     description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, eum!",
   },
   {
-    image: "https://i.ibb.co/jTQfmTq/img5.jpg",
-    title: "Netherland",
+    image: "/img/foto9.webp",
+    title: "foto5",
     description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, eum!",
   },
   {
-    image: "https://i.ibb.co/RNkk6L0/img6.jpg",
-    title: "Ireland",
+    image: "/img/cancha.webp",
+    title: "foto6",
     description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, eum!",
   },
 ];
