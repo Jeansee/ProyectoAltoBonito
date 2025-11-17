@@ -3,13 +3,13 @@ import { Controller, Get, Query, UseGuards, Patch, Param } from '@nestjs/common'
 import { AdminService } from './admin.service';
 import { AdminOnlyGuard } from '../../common/guards/admin-only.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Body, Req, Post, Delete } from '@nestjs/common/decorators';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminOnlyGuard)
 export class AdminController {
   constructor(private readonly admin: AdminService) {}
 
-  // GET /api/admin/metrics?from=YYYY-MM-DD&to=YYYY-MM-DD&tipoRecurso=QUINCHO&modalidad=BLOQUE
   @Get('metrics')
   async getMetrics(
     @Query('from') from?: string,
@@ -25,21 +25,44 @@ export class AdminController {
     });
   }
 
-  // GET /api/admin/recent-reservas?limit=10
   @Get('recent-reservas')
   async recent(@Query('limit') limit?: string) {
-    // sin ?limit -> devuelve todas
-    if (!limit) {
-      return this.admin.recentReservas();
-    }
-
+    if (!limit) return this.admin.recentReservas();
     const n = Math.max(1, Math.min(50, parseInt(limit, 10) || 10));
     return this.admin.recentReservas(n);
   }
 
-  // PATCH /api/admin/reservas/:id/cancel
   @Patch('reservas/:id/cancel')
   async cancelReserva(@Param('id') id: string) {
     return this.admin.cancelReservaByAdmin(id);
+  }
+
+  // ------------------ BLOQUEOS ------------------
+
+  @Get('bloqueos')
+  async listBloqueos() {
+    return this.admin.getBloqueos();
+  }
+
+  @Post('bloqueos')
+  async crearBloqueo(@Body() body, @Req() req) {
+    const adminId = req.user.userId ?? req.user.sub;
+
+    if (!adminId) {
+      throw new Error('adminId requerido para crear bloqueo');
+    }
+
+    return this.admin.createBloqueo({
+      recursoId: body.recursoId,
+      motivo: body.motivo,
+      inicio: body.inicio,
+      fin: body.fin,
+      adminId,
+    });
+  }
+
+  @Delete('bloqueos/:id')
+  async eliminarBloqueo(@Param('id') id: string) {
+    return this.admin.deleteBloqueo(id);
   }
 }

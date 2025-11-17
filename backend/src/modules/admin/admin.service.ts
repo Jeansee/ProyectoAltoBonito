@@ -407,4 +407,72 @@ export class AdminService {
 
     return updated;
   }
+
+
+  // -------- BLOQUEOS --------
+
+  async createBloqueo(args: {
+    recursoId: string; // puede ser UUID o tipo QUINCHO/PISCINA/CANCHA
+    motivo: string;
+    inicio: string; // "YYYY-MM-DD"
+    fin: string;    // "YYYY-MM-DD"
+    adminId: string;
+  }) {
+    const { recursoId, motivo, inicio, fin, adminId } = args;
+
+    if (!adminId) {
+      throw new Error('adminId requerido para crear bloqueo');
+    }
+
+    let realRecursoId = recursoId;
+
+    // Si viene el tipo de recurso, buscamos un recurso activo de ese tipo
+    if (recursoId === 'QUINCHO' || recursoId === 'PISCINA' || recursoId === 'CANCHA') {
+      const recurso = await this.prisma.prisma.recurso.findFirst({
+        where: { tipo: recursoId as any, activo: true },
+      });
+
+      if (!recurso) {
+        throw new NotFoundException(
+          `No se encontró un recurso activo para el tipo ${recursoId}`,
+        );
+      }
+
+      realRecursoId = recurso.id;
+    }
+
+    const inicioDate = new Date(inicio + 'T00:00:00Z');
+    const finDate = new Date(fin + 'T00:00:00Z'); 
+    finDate.setUTCDate(finDate.getUTCDate() + 1); 
+
+
+    return this.prisma.prisma.bloqueo.create({
+      data: {
+        recursoId: realRecursoId,
+        motivo,
+        inicio: inicioDate,
+        fin: finDate,
+        createdBy: adminId, // 👈 ESTE CAMPO ES OBLIGATORIO EN EL MODELO
+      },
+    });
+  }
+
+  async getBloqueos() {
+    return this.prisma.prisma.bloqueo.findMany({
+      orderBy: { inicio: 'asc' },
+      include: {
+        recurso: {
+          select: { id: true, nombre: true, tipo: true },
+        },
+      },
+    });
+  }
+
+  async deleteBloqueo(id: string) {
+    return this.prisma.prisma.bloqueo.delete({
+      where: { id },
+    });
+  }
+
+
 }

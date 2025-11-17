@@ -30,6 +30,14 @@ function monthBoundsUTC(keyYYYYMM: string) {
   return { first, last };
 }
 
+// tipo extendido para soportar bloqueo opcional
+type MonthDay = {
+  date: string;
+  available: boolean;
+  blocked?: boolean;
+  motivoBloqueo?: string;
+};
+
 export default function SlotPicker({
   recursoId,
   mode,
@@ -118,9 +126,9 @@ export default function SlotPicker({
   }, [fecha]);
 
   const [monthKey, setMonthKey] = useState(initialMonthKey);
-  const [monthDays, setMonthDays] = useState<{ date: string; available: boolean }[]>([]);
+  const [monthDays, setMonthDays] = useState<MonthDay[]>([]);
   const [loadingMonth, setLoadingMonth] = useState(false);
-  const cacheRef = useRef<Map<string, { date: string; available: boolean }[]>>(new Map());
+  const cacheRef = useRef<Map<string, MonthDay[]>>(new Map());
 
   useEffect(() => {
     if (mode !== "DIA_COMPLETO") return;
@@ -141,8 +149,9 @@ export default function SlotPicker({
         setLoadingMonth(true);
         const res = await getRecursoAvailability(recursoId, from, to, "DIA_COMPLETO");
         if (!alive) return;
-        cacheRef.current.set(monthKey, res.days);
-        setMonthDays(res.days);
+        // asumimos que res.days ya puede traer blocked/motivoBloqueo opcionalmente
+        cacheRef.current.set(monthKey, res.days as MonthDay[]);
+        setMonthDays(res.days as MonthDay[]);
       } finally {
         if (alive) setLoadingMonth(false);
       }
@@ -159,12 +168,21 @@ export default function SlotPicker({
     const startW = first.getUTCDay();
     const daysInMonth = monthDays.length;
 
-    const cells: { ymd?: string; available?: boolean }[] = [];
+    const cells: {
+      ymd?: string;
+      available?: boolean;
+      blocked?: boolean;
+      motivoBloqueo?: string;
+    }[] = [];
+
     for (let i = 0; i < startW; i++) cells.push({});
     for (let i = 0; i < daysInMonth; i++) {
+      const d = monthDays[i];
       cells.push({
-        ymd: monthDays[i].date,
-        available: monthDays[i].available,
+        ymd: d.date,
+        available: d.available,
+        blocked: d.blocked,
+        motivoBloqueo: d.motivoBloqueo,
       });
     }
     while (cells.length % 7 !== 0) cells.push({});
@@ -245,26 +263,46 @@ export default function SlotPicker({
 
                   const isPast = c.ymd < todayStr;
                   const selected = value.fecha === c.ymd;
-                  const disabled = isPast || !c.available;
+                  const blocked = !!c.blocked;
+
+                  const disabled = isPast || !c.available || blocked;
+
+                  const title = blocked
+                    ? c.motivoBloqueo || "Día bloqueado por administración"
+                    : c.available
+                    ? "Disponible"
+                    : "No disponible";
 
                   return (
                     <button
                       key={c.ymd}
                       disabled={disabled}
-                      onClick={() => onChange({ fecha: c.ymd!, desde: undefined, hasta: undefined })} // <- !
+                      onClick={() =>
+                        onChange({ fecha: c.ymd!, desde: undefined, hasta: undefined })
+                      }
                       className={`h-10 rounded-lg border text-sm transition
-                        ${disabled
-                          ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                          : selected
-                          ? "bg-[#c14421] text-white border border-[#c14421]/30"
-                          : "bg-white text-[#1e1e1e] border border-[#c14421]/30"
+                        ${
+                          disabled
+                            ? blocked
+                              ? "bg-red-100 text-red-600 border-red-300 cursor-not-allowed"
+                              : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                            : selected
+                            ? "bg-[#c14421] text-white border border-[#c14421]/30"
+                            : "bg-white text-[#1e1e1e] border border-[#c14421]/30"
                         }`}
-                      title={c.available ? "Disponible" : "No disponible"}
+                      title={title}
                     >
                       {Number(c.ymd.slice(8, 10))}
                     </button>
                   );
                 })}
+              </div>
+
+              <div className="mt-2 text-xs text-gray-500 flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <span className="inline-block h-3 w-3 rounded bg-red-200" />{" "}
+                  Días bloqueados
+                </div>
               </div>
             </>
           )}
@@ -279,7 +317,9 @@ export default function SlotPicker({
             <p className="text-sm text-gray-600">Sin horarios configurados o disponibles.</p>
           ) : (
             <>
-              <div className="text-sm text-[#1e1e1e] font-bold mb-2">Horarios disponibles ({libres.length} libres)</div>
+              <div className="text-sm text-[#1e1e1e] font-bold mb-2">
+                Horarios disponibles ({libres.length} libres)
+              </div>
 
               {mode === "BLOQUE" && (
                 <p className="text-xs text-[gray-500] mb-2">

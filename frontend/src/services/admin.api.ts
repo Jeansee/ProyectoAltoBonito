@@ -78,3 +78,24 @@ export async function cancelReservaAdmin(id: string) {
   const { data } = await api.patch(`/admin/reservas/${id}/cancel`);
   return data;
 }
+
+export async function fetchBloqueos() {
+  const { data } = await api.get("/admin/bloqueos");
+  return data;
+}
+
+export async function createBloqueo(payload: {
+  recursoId: string;
+  motivo: string;
+  inicio: string;
+  fin: string;
+}) {
+  const { data } = await api.post("/admin/bloqueos", payload);
+  return data;
+}
+
+export async function deleteBloqueo(id: string) {
+  const { data } = await api.delete(`/admin/bloqueos/${id}`);
+  return data;
+}
+

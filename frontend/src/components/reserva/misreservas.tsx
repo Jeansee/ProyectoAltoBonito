@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { fetchMisReservas, type MisReservasItem } from '@/services/reservas.service';
 import { useAuth } from '@/context/AuthContext';
 
+const PAGE_SIZE = 4;
+
 function fmtCLP(n: number) {
   return n.toLocaleString('es-CL', {
     style: 'currency',
@@ -50,6 +52,8 @@ export default function MisReservas() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [page, setPage] = useState(1);
+
   useEffect(() => {
     (async () => {
       try {
@@ -63,6 +67,11 @@ export default function MisReservas() {
       }
     })();
   }, [user?.id]);
+
+  // si cambia la cantidad de reservas, volvemos a la página 1
+  useEffect(() => {
+    setPage(1);
+  }, [data?.length]);
 
   if (!user?.id) {
     return (
@@ -96,9 +105,18 @@ export default function MisReservas() {
     );
   }
 
+  // ---- paginación cliente ----
+  const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
+  const startIndex = (page - 1) * PAGE_SIZE;
+  const endIndex = Math.min(startIndex + PAGE_SIZE, data.length);
+  const pageItems = data.slice(startIndex, endIndex);
+
+  const handlePrev = () => setPage((p) => Math.max(1, p - 1));
+  const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
+
   return (
     <div className="p-6 md:p-8 space-y-5">
-      {data.map((r) => (
+      {pageItems.map((r) => (
         <div
           key={r.id}
           className="rounded-2xl bg-[#ffb26a]/25 border border-[#c14421]/30"
@@ -150,6 +168,33 @@ export default function MisReservas() {
           </div>
         </div>
       ))}
+
+      {data.length > PAGE_SIZE && (
+        <div className="pt-2 flex items-center justify-between text-xs md:text-sm text-gray-600">
+          <span>
+            Mostrando {startIndex + 1}–{endIndex} de {data.length} reservas
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePrev}
+              disabled={page === 1}
+              className="rounded-full border px-3 py-1 disabled:opacity-50 disabled:cursor-not-allowed bg-white hover:bg-gray-50"
+            >
+              Anterior
+            </button>
+            <span>
+              Página {page} de {totalPages}
+            </span>
+            <button
+              onClick={handleNext}
+              disabled={page === totalPages}
+              className="rounded-full border px-3 py-1 disabled:opacity-50 disabled:cursor-not-allowed bg-white hover:bg-gray-50"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

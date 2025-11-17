@@ -12,7 +12,9 @@ import {
   FiDollarSign,
   FiFilter,
   FiRefreshCw,
+  FiLock, // 👈 nuevo icono
 } from "react-icons/fi";
+import BloqueoManager from "./bloqueomanager";
 
 const ACCENT = "#c14421";
 const ARENA = "#fad4b6ff";
@@ -589,6 +591,40 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Bloqueo de días – NUEVO DISEÑO */}
+      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ffb26a]/25 text-[#c14421]">
+              <FiLock />
+            </div>
+            <div>
+              <div className="text-base font-semibold text-gray-900">
+                Bloqueo de fechas
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Define días en los que el quincho, piscina o cancha{" "}
+                <span className="font-semibold">no estarán disponibles</span>{" "}
+                para reservas (mantención, eventos privados, etc.). Los clientes
+                verán esos días bloqueados en rojo y no podrán seleccionarlos en
+                el calendario.
+              </p>
+            </div>
+          </div>
+          <span className="rounded-full bg-gray-100 px-3 py-1 text-[11px] font-medium text-gray-600">
+            Solo administración
+          </span>
+        </div>
+
+        <BloqueoManager />
+
+        <p className="mt-3 text-[11px] text-gray-500">
+          Nota: los bloqueos afectan solo a las reservas futuras. Las fechas ya
+          reservadas se mantienen, a menos que se cancelen manualmente desde el
+          listado de reservas.
+        </p>
       </div>
 
       {/* Tabla últimas reservas con paginación */}
