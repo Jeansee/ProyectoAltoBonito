@@ -77,33 +77,36 @@ export class RecursosService {
     const recurso = await this.prisma.recurso.findUnique({ where: { id: recursoId } });
     if (!recurso) throw new NotFoundException('Recurso no encontrado');
 
-    // Bloquea días pasados (UTC)
-    const todayStrUTC = new Date().toISOString().slice(0, 10);
-    if (fechaYYYYMMDD < todayStrUTC) {
+    // Bloquea días pasados (LOCAL)
+    const todayLocalStr = this.dayStr(new Date());
+    if (fechaYYYYMMDD < todayLocalStr) {
       return { fecha: fechaYYYYMMDD, step: stepMin, slots: [] as Slot[] };
     }
 
-    const date = new Date(`${fechaYYYYMMDD}T00:00:00.000Z`);
-    const day = date.getUTCDay(); // 0=domingo
+    // Interpreta fecha como día local
+    const [y, m, d] = fechaYYYYMMDD.split('-').map(Number);
+    const dateLocal = new Date(y, m - 1, d, 0, 0, 0, 0);
+
+    const day = dateLocal.getDay(); // 0=domingo (local)
     const horario = await this.prisma.horario.findFirst({
       where: { recursoId, diaSemana: day, activo: true },
     });
 
     if (!horario) return { fecha: fechaYYYYMMDD, step: stepMin, slots: [] as Slot[] };
 
-    // Ventana de trabajo (maneja overnight)
-    const start = new Date(`${fechaYYYYMMDD}T00:00:00.000Z`);
-    start.setUTCMinutes(horario.abreMin, 0, 0);
+    // Ventana de trabajo (maneja overnight) — usamos minutos en hora local
+    const start = new Date(dateLocal);
+    start.setMinutes(horario.abreMin, 0, 0); // horario.abreMin = minutos desde 00:00
 
-    const end = new Date(`${fechaYYYYMMDD}T00:00:00.000Z`);
-    end.setUTCMinutes(horario.cierraMin, 0, 0);
+    const end = new Date(dateLocal);
+    end.setMinutes(horario.cierraMin, 0, 0);
     if (horario.abreMin >= horario.cierraMin) {
-      end.setUTCDate(end.getUTCDate() + 1); // cierra al día siguiente
+      end.setDate(end.getDate() + 1); // cierra al día siguiente (local)
     }
 
-    // ⏱ límite para PENDIENTE: 5 minutos
+    // ⏱ límite para PENDIENTE: 1 minuto
     const now = new Date();
-    const cutoff = new Date(now.getTime() - 5 * 60 * 1000);
+    const cutoff = new Date(now.getTime() - 1 * 60 * 1000);
 
     // Reservas y bloqueos que se cruzan
     const reservas = await this.prisma.reservaRecurso.findMany({
@@ -135,7 +138,7 @@ export class RecursosService {
       ...bloqueos.map((b) => ({ inicio: b.inicio, fin: b.fin })),
     ];
 
-    const isToday = fechaYYYYMMDD === todayStrUTC;
+    const isToday = fechaYYYYMMDD === todayLocalStr;
 
     const slots: Slot[] = [];
     for (let cur = new Date(start); cur < end; cur = new Date(cur.getTime() + stepMin * 60000)) {
@@ -150,19 +153,23 @@ export class RecursosService {
         overlaps(s, e, new Date(b.inicio), new Date(b.fin)),
       );
 
+      // Devuelve ISO (UTC) — el frontend debe presentar en la zona local del usuario
       slots.push({ inicio: s.toISOString(), fin: e.toISOString(), busy });
     }
 
     return { fecha: fechaYYYYMMDD, step: stepMin, slots };
   }
 
-  // Helpers de fechas (UTC)
+  // Helpers de fechas (LOCAL)
   private dayStr(d: Date) {
-    return d.toISOString().slice(0, 10);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
   private addDays(d: Date, days: number) {
     const x = new Date(d);
-    x.setUTCDate(x.getUTCDate() + days);
+    x.setDate(x.getDate() + days);
     return x;
   }
 
@@ -178,9 +185,12 @@ export class RecursosService {
     const recurso = await this.prisma.recurso.findUnique({ where: { id: recursoId } });
     if (!recurso) throw new NotFoundException('Recurso no encontrado');
 
-    // Validaciones básicas de rango
-    const rangeStart = new Date(`${fromYYYYMMDD}T00:00:00.000Z`);
-    const rangeEnd = new Date(`${toYYYYMMDD}T23:59:59.999Z`);
+    // Validaciones básicas de rango (interpretadas en local)
+    const [fy, fm, fd] = fromYYYYMMDD.split('-').map(Number);
+    const [ty, tm, td] = toYYYYMMDD.split('-').map(Number);
+    const rangeStart = new Date(fy, fm - 1, fd, 0, 0, 0, 0);
+    const rangeEnd = new Date(ty, tm - 1, td, 23, 59, 59, 999);
+
     if (isNaN(rangeStart.getTime()) || isNaN(rangeEnd.getTime())) {
       throw new BadRequestException('Fechas inválidas en "from" o "to" (YYYY-MM-DD)');
     }
@@ -200,9 +210,9 @@ export class RecursosService {
     const horariosMap = new Map<number, { abreMin: number; cierraMin: number }>();
     for (const h of horarios) horariosMap.set(h.diaSemana, { abreMin: h.abreMin, cierraMin: h.cierraMin });
 
-    // ⏱ límite para PENDIENTE: 5 minutos
+    // ⏱ límite para PENDIENTE: 1 minuto
     const now = new Date();
-    const cutoff = new Date(now.getTime() - 5 * 60 * 1000);
+    const cutoff = new Date(now.getTime() - 1 * 60 * 1000);
 
     // reservas y bloqueos en el rango
     const reservas = await this.prisma.reservaRecurso.findMany({
@@ -225,15 +235,11 @@ export class RecursosService {
       select: { inicio: true, fin: true },
     });
 
-    // Marca días con cualquier overlap (día a día)
+    // Marca días con cualquier overlap (día a día) — usamos fechas locales para marcar
     const busyDays = new Set<string>();
     const markBusy = (start: Date, end: Date) => {
-      let cur = new Date(Date.UTC(
-        start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate(), 0, 0, 0, 0
-      ));
-      const endDay = new Date(Date.UTC(
-        end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate(), 0, 0, 0, 0
-      ));
+      let cur = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
+      const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 0, 0, 0, 0);
       while (cur <= endDay) {
         busyDays.add(this.dayStr(cur));
         cur = this.addDays(cur, 1);
@@ -244,15 +250,15 @@ export class RecursosService {
 
     // genera respuesta día a día
     const days: { date: string; available: boolean }[] = [];
-    let d = new Date(`${fromYYYYMMDD}T00:00:00.000Z`);
-    const end = new Date(`${toYYYYMMDD}T00:00:00.000Z`);
+    let d = new Date(rangeStart);
+    const end = new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), rangeEnd.getDate(), 0, 0, 0, 0);
     const todayStr = this.dayStr(new Date());
 
     while (d <= end) {
       const dateStr = this.dayStr(d);
       const isPast = dateStr < todayStr;
 
-      const wd = d.getUTCDay(); // 0=domingo
+      const wd = d.getDay(); // 0=domingo (local)
       const h = horariosMap.get(wd);
 
       const available = !isPast && !!h && !busyDays.has(dateStr);

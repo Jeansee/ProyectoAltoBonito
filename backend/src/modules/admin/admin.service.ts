@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { EstadoReserva } from '@prisma/client';
 
@@ -9,7 +9,7 @@ type Range = {
   modalidad?: 'POR_HORA' | 'BLOQUE' | 'DIA_COMPLETO';
 };
 
-// WHERE para reservas: inicio >= from 00:00 AND inicio < (to+1) 00:00
+// WHERE para reservas: inicio >= from 00:00 (local) AND inicio < (to+1) 00:00 (local)
 const buildReservaDateWhere = (from?: string, to?: string) => {
   const where: any = {};
 
@@ -17,13 +17,23 @@ const buildReservaDateWhere = (from?: string, to?: string) => {
     const cond: any = {};
 
     if (from) {
-      const start = new Date(from + 'T00:00:00'); // sin Z para no liar el huso
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(from)) {
+        throw new BadRequestException('from debe estar en formato YYYY-MM-DD');
+      }
+      const [fy, fm, fd] = from.split('-').map(Number);
+      // start = local midnight del día "from"
+      const start = new Date(fy, fm - 1, fd, 0, 0, 0, 0);
       cond.gte = start;
     }
 
     if (to) {
-      const end = new Date(to + 'T00:00:00');
-      end.setDate(end.getDate() + 1); // día siguiente
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+        throw new BadRequestException('to debe estar en formato YYYY-MM-DD');
+      }
+      const [ty, tm, td] = to.split('-').map(Number);
+      // end = midnight del día siguiente (local) -> usamos < end para incluir todo el "to"
+      const end = new Date(ty, tm - 1, td, 0, 0, 0, 0);
+      end.setDate(end.getDate() + 1);
       cond.lt = end;
     }
 
@@ -81,7 +91,7 @@ export class AdminService {
           estado: true,
           modalidad: true,
           inicio: true,
-          usuarioId: true, // 👈 necesario para clientes nuevos vs recurrentes
+          usuarioId: true,
           recursos: {
             select: {
               recursoId: true,
@@ -102,10 +112,10 @@ export class AdminService {
 
     // ====== KPIs ======
     const totalReservas = reservas.filter(
-    (r) =>
-    r.estado === EstadoReserva.CONFIRMADA ||
-    r.estado === EstadoReserva.PAGADA,
-    ).length; // solo CONFIRMADA/PAGADA/CANCELADA
+      (r) =>
+        r.estado === EstadoReserva.CONFIRMADA ||
+        r.estado === EstadoReserva.PAGADA,
+    ).length;
 
     // Ingresos globales: suma SOLO de CONFIRMADA/PAGADA
     let ingresosCLP = 0;
@@ -139,6 +149,7 @@ export class AdminService {
     const reservasPorModalidad = Array.from(
       reservasPorModalidadMap.entries(),
     ).map(([modalidad, count]) => ({ modalidad, count }));
+
     // ====== Ocupancia e ingresos por recurso / mes ======
     const recursoMesMap = new Map<
       string,
@@ -185,10 +196,10 @@ export class AdminService {
         );
       }
 
-      // --- Mes para recursoMes ---
-      const year = inicio.getUTCFullYear();
-      const monthNum = inicio.getUTCMonth() + 1;
-      const month = `${year}-${String(monthNum).padStart(2, '0')}`; // ej: "2026-01"
+      // --- Mes para recursoMes (USAMOS hora/local aquí) ---
+      const year = inicio.getFullYear();
+      const monthNum = inicio.getMonth() + 1;
+      const month = `${year}-${String(monthNum).padStart(2, '0')}`;
 
       for (const rr of r.recursos) {
         const key = `${rr.recursoId}|${month}`;
@@ -210,15 +221,15 @@ export class AdminService {
         }
       }
 
-      // --- Día de la semana (0=Dom ... 6=Sáb) ---
-      const dow = inicio.getUTCDay();
+      // --- Día de la semana (0=Dom ... 6=Sáb) -> USAR local
+      const dow = inicio.getDay();
       reservasPorDiaSemanaMap.set(
         dow,
         (reservasPorDiaSemanaMap.get(dow) ?? 0) + 1,
       );
 
-      // --- Franja horaria ---
-      const hour = inicio.getUTCHours();
+      // --- Franja horaria (hora local) ---
+      const hour = inicio.getHours();
       const franja =
         FRANJAS.find((f) => hour >= f.from && hour < f.to) ?? FRANJAS[0];
 
@@ -248,7 +259,6 @@ export class AdminService {
     }));
 
     // ====== Clientes nuevos vs recurrentes (histórico) ======
-
 
     let clientesNuevos = 0;
     let clientesRecurrentes = 0;
@@ -315,14 +325,15 @@ export class AdminService {
 
   async recentReservas(limit?: number) {
     const now = new Date();
-    const cutoff = new Date(now.getTime() - 5 * 60 * 1000); // 5 minutos atrás
+    // ⏱ PENDIENTE: 1 minuto (coherente con el resto)
+    const cutoff = new Date(now.getTime() - 1 * 60 * 1000);
 
     const findArgs: any = {
       where: {
         OR: [
           // Siempre mostramos CONFIRMADA / PAGADA / CANCELADA
           { estado: { in: ['CONFIRMADA', 'PAGADA', 'CANCELADA'] } },
-          // PENDIENTE solo si fue creada hace menos de 5 minutos
+          // PENDIENTE solo si fue creada hace menos de 1 minuto
           { estado: 'PENDIENTE', createdAt: { gt: cutoff } },
         ],
       },
@@ -408,7 +419,6 @@ export class AdminService {
     return updated;
   }
 
-
   // -------- BLOQUEOS --------
 
   async createBloqueo(args: {
@@ -441,18 +451,56 @@ export class AdminService {
       realRecursoId = recurso.id;
     }
 
-    const inicioDate = new Date(inicio + 'T00:00:00Z');
-    const finDate = new Date(fin + 'T00:00:00Z'); 
-    finDate.setUTCDate(finDate.getUTCDate() + 1); 
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(inicio) || !/^\d{4}-\d{2}-\d{2}$/.test(fin)) {
+      throw new BadRequestException('Fechas deben ir en formato YYYY-MM-DD');
+    }
 
+    // INTERPRETAR COMO LOCAL (medianoche inicio -> fin del día fin)
+    const [ys, ms, ds] = inicio.split('-').map(Number);
+    const [ye, me, de] = fin.split('-').map(Number);
 
+    const inicioDate = new Date(ys, ms - 1, ds, 0, 0, 0, 0); // local midnight
+    const finDate = new Date(ye, me - 1, de, 23, 59, 59, 999); // local end of day
+
+    if (inicioDate > finDate) {
+      throw new BadRequestException('"inicio" debe ser <= "fin"');
+    }
+
+    // ---------- Rechazar si hay reservas CONFIRMADA / PAGADA que se solapen ----------
+    const solapadasConfPag = await this.prisma.prisma.reservaRecurso.findMany({
+      where: {
+        recursoId: realRecursoId,
+        reserva: {
+          estado: { in: ['CONFIRMADA', 'PAGADA'] },
+          inicio: { lt: finDate },
+          fin: { gt: inicioDate },
+        },
+      },
+      include: {
+        reserva: { select: { id: true, inicio: true, fin: true, estado: true, usuarioId: true } },
+      },
+    });
+
+    if (solapadasConfPag.length > 0) {
+      // Construir mensaje útil (máx 5 reservas en el mensaje para no explotar)
+      const sample = solapadasConfPag.slice(0, 5).map((s) => {
+        const r = s.reserva;
+        return `id=${r.id} inicio=${r.inicio.toISOString()} fin=${r.fin.toISOString()} estado=${r.estado}`;
+      });
+      const more = solapadasConfPag.length > 5 ? ` (+${solapadasConfPag.length - 5} más)` : '';
+      throw new BadRequestException(
+        `No se puede crear bloqueo: existen ${solapadasConfPag.length} reserva(s) CONFIRMADA/PAGADA que se solapan. Ej: ${sample.join(' | ')}${more}`
+      );
+    }
+
+    // Si no hay conflictos CONFIRMADA/PAGADA, creamos el bloqueo (no tocamos PENDIENTE aquí)
     return this.prisma.prisma.bloqueo.create({
       data: {
         recursoId: realRecursoId,
         motivo,
         inicio: inicioDate,
         fin: finDate,
-        createdBy: adminId, // 👈 ESTE CAMPO ES OBLIGATORIO EN EL MODELO
+        createdBy: adminId,
       },
     });
   }
@@ -473,6 +521,4 @@ export class AdminService {
       where: { id },
     });
   }
-
-
 }

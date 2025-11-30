@@ -20,9 +20,9 @@ export class ReservasService {
   ) {}
 
   async esDisponible(recursoId: string, desde: Date, hasta: Date) {
-    // ⏱ solo consideramos PENDIENTE si fue creada hace menos de 5 minutos
+    // ⏱ solo consideramos PENDIENTE si fue creada hace menos de 1 minuto
     const now = new Date();
-    const cutoff = new Date(now.getTime() - 5 * 60 * 1000);
+    const cutoff = new Date(now.getTime() - 1 * 60 * 1000);
 
     const overlapReserva = await this.prisma.reservaRecurso.findFirst({
       where: {
@@ -50,8 +50,44 @@ export class ReservasService {
     return !overlapReserva && !overlapBloqueo;
   }
 
+  /**
+   * Parsea varios formatos de entrada:
+   * - "YYYY-MM-DD"           -> día (se interpreta como local midnight)
+   * - "YYYY-MM-DDTHH:mm(:ss)?(Z|±HH:MM)?" -> si incluye 'Z' o ±HH:MM, Date lo parsea correctamente (UTC/offset)
+   *   si no incluye zona (no Z y no ±HH:MM) lo tratamos como hora LOCAL explícita.
+   */
   private parseISOOrThrow(v?: string, name = 'fecha') {
     if (!v) throw new BadRequestException(`Campo "${name}" es requerido`);
+
+    // YYYY-MM-DD (solo fecha) -> interpretar como día local
+    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(v);
+    if (dateOnly) {
+      const [y, m, d] = v.split('-').map(Number);
+      return new Date(y, m - 1, d, 0, 0, 0, 0); // local midnight
+    }
+
+    // ISO datetime con offset 'Z' o +/-HH:MM
+    const hasTZ = /Z$|[+-]\d{2}:\d{2}$/.test(v);
+
+    if (hasTZ) {
+      const d = new Date(v);
+      if (isNaN(d.getTime())) throw new BadRequestException(`Campo "${name}" inválido: ${v}`);
+      return d; // Date will handle offset/Z correctly
+    }
+
+    // Datetime sin zona (e.g. '2025-11-29T07:00:00' o '2025-11-29T07:00')
+    // Interpretar como LOCAL (evita que node trate de forma ambigua)
+    const dtMatch = v.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?$/);
+    if (dtMatch) {
+      const [, yS, mS, dS, hS, minS, sS] = dtMatch;
+      const y = Number(yS), m = Number(mS), d = Number(dS);
+      const h = Number(hS), min = Number(minS), s = sS ? Number(sS) : 0;
+      const dateLocal = new Date(y, m - 1, d, h, min, s, 0); // local time
+      if (isNaN(dateLocal.getTime())) throw new BadRequestException(`Campo "${name}" inválido: ${v}`);
+      return dateLocal;
+    }
+
+    // Fallback: intentar construir con Date (acepta otros formatos)
     const d = new Date(v);
     if (isNaN(d.getTime())) {
       throw new BadRequestException(`Campo "${name}" inválido: ${v}`);
@@ -95,8 +131,10 @@ export class ReservasService {
       recursosMap.set(i.recursoId, r);
     }
 
+    // hoy en forma local (YYYY-MM-DD) -> para comparar DIA_COMPLETO contra "hoy"
     const now = new Date();
-    const todayStrUTC = now.toISOString().slice(0, 10);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const todayLocalStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 
     const itemsExpanded: {
       recurso: NonNullable<
@@ -119,6 +157,7 @@ export class ReservasService {
       const precioDia = recurso.precioDiaCLP ?? recurso.precioBaseCLP ?? 0;
 
       if (modalidad === 'POR_HORA') {
+        // Se acepta ISO con zona (recomendado) o sin zona (se interpreta como local)
         desde = this.parseISOOrThrow(i.desde, 'desde');
         hasta = this.parseISOOrThrow(i.hasta, 'hasta');
 
@@ -142,6 +181,7 @@ export class ReservasService {
         precioItem = precioHora * horas;
 
       } else if (modalidad === 'BLOQUE') {
+        // Igual que POR_HORA: aceptar ISO con zona o sin zona (local)
         desde = this.parseISOOrThrow(i.desde, 'desde');
         hasta = this.parseISOOrThrow(i.hasta, 'hasta');
         if (!(desde < hasta))
@@ -171,12 +211,15 @@ export class ReservasService {
           );
         }
 
-        if (f < todayStrUTC) {
+        // Compara con hoy en local (evita que '2025-11-29' se interprete en UTC y quede desfasado)
+        if (f < todayLocalStr) {
           throw new BadRequestException('No se puede reservar días pasados');
         }
 
-        desde = new Date(`${f}T00:00:00.000Z`);
-        hasta = new Date(`${f}T23:59:59.999Z`);
+        // Interpreta el día como local (medianoche local -> guardamos Date que luego prisma convertirá a UTC)
+        const [y, m, d] = f.split('-').map(Number);
+        desde = new Date(y, m - 1, d, 0, 0, 0, 0); // local midnight
+        hasta = new Date(y, m - 1, d, 23, 59, 59, 999); // local end of day
         precioItem = precioDia;
 
       } else {

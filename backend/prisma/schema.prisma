@@ -8,13 +8,14 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL")  // 👈 VUELVE A ESTAR AQUÍ
 }
 
 generator prisma_client {
   provider = "prisma-client-js"
   seed     = "ts-node prisma/seed.ts"
 }
+
 
 // ================ Enumeraciones ================
 enum TipoRecurso {
@@ -55,9 +56,6 @@ enum RolUsuario {
   ADMIN // Acceso total al sistema
 }
 
-/**
- * ================ Modelos ================
- */
 // ================ Modelos Principales ================
 
 model Usuario {
@@ -233,7 +231,10 @@ model Pago {
   @@index([metodoPago], name: "pago_metodo_idx")
 }
 
-// generator erd {
-//   provider = "prisma-erd-generator"
-//   output   = "../ERD.svg"
-// }
+
+//generator erd {
+//  provider    = "prisma-erd-generator"
+//  output      = "../ERD.svg"
+//  ignoreEnums = true  // 👈 NO dibuja los enums, solo las tablas
+  // tableOnly = true // opcional: solo cajas de tablas, sin columnas
+//}
