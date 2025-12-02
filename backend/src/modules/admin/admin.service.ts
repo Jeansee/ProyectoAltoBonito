@@ -466,12 +466,12 @@ export class AdminService {
       throw new BadRequestException('"inicio" debe ser <= "fin"');
     }
 
-    // ---------- Rechazar si hay reservas CONFIRMADA / PAGADA que se solapen ----------
-    const solapadasConfPag = await this.prisma.prisma.reservaRecurso.findMany({
+    // ---------- Rechazar si hay reservas CONFIRMADA / PAGADA / PENDIENTE que se solapen ----------
+    const solapadasActivas = await this.prisma.prisma.reservaRecurso.findMany({
       where: {
         recursoId: realRecursoId,
         reserva: {
-          estado: { in: ['CONFIRMADA', 'PAGADA'] },
+          estado: { in: ['CONFIRMADA', 'PAGADA', 'PENDIENTE'] },
           inicio: { lt: finDate },
           fin: { gt: inicioDate },
         },
@@ -481,19 +481,19 @@ export class AdminService {
       },
     });
 
-    if (solapadasConfPag.length > 0) {
+    if (solapadasActivas.length > 0) {
       // Construir mensaje útil (máx 5 reservas en el mensaje para no explotar)
-      const sample = solapadasConfPag.slice(0, 5).map((s) => {
+      const sample = solapadasActivas.slice(0, 5).map((s) => {
         const r = s.reserva;
         return `id=${r.id} inicio=${r.inicio.toISOString()} fin=${r.fin.toISOString()} estado=${r.estado}`;
       });
-      const more = solapadasConfPag.length > 5 ? ` (+${solapadasConfPag.length - 5} más)` : '';
+      const more = solapadasActivas.length > 5 ? ` (+${solapadasActivas.length - 5} más)` : '';
       throw new BadRequestException(
-        `No se puede crear bloqueo: existen ${solapadasConfPag.length} reserva(s) CONFIRMADA/PAGADA que se solapan. Ej: ${sample.join(' | ')}${more}`
+        `No se puede crear bloqueo: existen ${solapadasActivas.length} reserva(s) activa(s) (CONFIRMADA/PAGADA/PENDIENTE) que se solapan. Ej: ${sample.join(' | ')}${more}`
       );
     }
 
-    // Si no hay conflictos CONFIRMADA/PAGADA, creamos el bloqueo (no tocamos PENDIENTE aquí)
+    // Si no hay conflictos con reservas activas, creamos el bloqueo
     return this.prisma.prisma.bloqueo.create({
       data: {
         recursoId: realRecursoId,

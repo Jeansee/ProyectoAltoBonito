@@ -42,11 +42,34 @@ export default function BloqueoManager() {
     setLoading(true);
     try {
       await createBloqueo({ recursoId, motivo, inicio, fin });
+      alert("✅ Bloqueo creado exitosamente");
       setMotivo("");
       setInicio("");
       setFin("");
       setRecursoId("");
       await load();
+    } catch (error: any) {
+      // Extraer mensaje de error del backend
+      const errorMessage = error?.response?.data?.message || error?.message || "Error desconocido";
+      
+      // Si el error menciona reservas solapadas, mostrar alerta específica y detallada
+      if (errorMessage.includes("reserva(s) activa(s)") || errorMessage.includes("reserva(s) CONFIRMADA/PAGADA")) {
+        // Intentar extraer el número de reservas del mensaje
+        const match = errorMessage.match(/existen (\d+) reserva\(s\)/);
+        const numReservas = match ? match[1] : "algunas";
+        
+        alert(
+          `❌ NO SE PUEDE BLOQUEAR ESTAS FECHAS\n\n` +
+          `El recurso seleccionado tiene ${numReservas} reserva(s) activa(s) en el período especificado.\n\n` +
+          `📅 Rango solicitado: ${inicio} hasta ${fin}\n\n` +
+          `⚠️ Debes cancelar las reservas existentes (confirmadas, pagadas o pendientes) antes de crear este bloqueo.\n\n` +
+          `Consulta la sección "Gestión de Reservas" para ver los detalles.`
+        );
+      } else {
+        // Mostrar error genérico
+        alert(`❌ Error al crear bloqueo:\n\n${errorMessage}`);
+      }
+      console.error("Error creando bloqueo:", error);
     } finally {
       setLoading(false);
     }
@@ -60,6 +83,15 @@ export default function BloqueoManager() {
 
   return (
     <div className="space-y-4">
+      {/* NOTA INFORMATIVA */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+        <p className="font-semibold mb-1">ℹ️ Información sobre bloqueos</p>
+        <p>
+          No se pueden bloquear fechas que tengan reservas activas (confirmadas, pagadas o pendientes). 
+          Si necesitas bloquear un período con reservas existentes, primero debes cancelarlas desde la sección "Gestión de Reservas".
+        </p>
+      </div>
+
       {/* FORMULARIO */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <select

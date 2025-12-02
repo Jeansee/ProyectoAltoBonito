@@ -85,12 +85,22 @@ export default function OptionChatbot({
         setOpen(parsed.open ?? !floating);
         setCurrentId(parsed.currentId ?? tree.startId);
         setHistory(parsed.history ?? [tree.startId]);
-        setMessages(parsed.messages ?? []);
+        
+        // Si no hay mensajes guardados, mostrar mensaje inicial
+        if (!parsed.messages || parsed.messages.length === 0) {
+          const first = tree.nodes[tree.startId];
+          if (first) {
+            setMessages([{ role: "bot", text: first.message, nodeId: first.id }]);
+          }
+        } else {
+          setMessages(parsed.messages);
+        }
         return;
       }
     } catch {
       /* no-op */
     }
+    // Si no hay nada en localStorage, mostrar mensaje inicial
     const first = tree.nodes[tree.startId];
     if (first) {
       setMessages([{ role: "bot", text: first.message, nodeId: first.id }]);

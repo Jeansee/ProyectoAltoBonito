@@ -11,7 +11,10 @@
     "start": "nest start",
     "db:gen": "prisma generate",
     "db:push": "prisma db push --skip-generate",
-    "db:seed": "ts-node prisma/seed.ts"
+    "db:seed": "ts-node prisma/seed.ts",
+    "test:playwright": "npx playwright test",
+    "test:playwright:headed": "npx playwright test --headed",
+    "show-report": "npx playwright show-report"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.0.2",
@@ -31,13 +34,16 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cookie-parser": "^1.4.7",
+    "express-rate-limit": "^8.2.1",
     "google-auth-library": "^10.4.0",
     "googleapis": "^162.0.0",
+    "helmet": "^8.1.0",
     "mercadopago": "^2.10.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "sanitize-html": "^2.17.0",
     "transbank-sdk": "^6.1.0"
   },
   "devDependencies": {
@@ -50,6 +56,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.9",
     "@types/express": "^5.0.0",
+    "@types/express-rate-limit": "^5.1.3",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.19.0",
     "@types/nodemailer": "^7.0.3",
